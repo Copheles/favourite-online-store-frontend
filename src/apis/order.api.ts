@@ -1,0 +1,53 @@
+import { axiosClient } from "@/lib/axios";
+import { toQueryString } from "@/lib/queryParams";
+import type {
+  OrderDetail,
+  OrderListItem,
+  OrderReceipt,
+  OrderStatus,
+  PaginatedResponse,
+  PaymentType,
+} from "@/types/api";
+
+export interface ListOrdersParams {
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+  paymentType?: PaymentType;
+  status?: OrderStatus;
+  customerId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function listOrders(
+  params: ListOrdersParams = {},
+): Promise<PaginatedResponse<OrderListItem>> {
+  const { data } = await axiosClient.get<PaginatedResponse<OrderListItem>>(
+    `/api/orders${toQueryString(params)}`,
+  );
+  return data;
+}
+
+export async function getOrder(id: string): Promise<OrderDetail> {
+  const { data } = await axiosClient.get<OrderDetail>(`/api/orders/${id}`);
+  return data;
+}
+
+export async function getOrderReceipt(id: string): Promise<OrderReceipt> {
+  const { data } = await axiosClient.get<OrderReceipt>(
+    `/api/orders/${id}/receipt`,
+  );
+  return data;
+}
+
+export async function updateOrderStatus(
+  id: string,
+  status: Extract<OrderStatus, "COMPLETED" | "CANCELLED">,
+): Promise<OrderDetail> {
+  const { data } = await axiosClient.patch<OrderDetail>(
+    `/api/orders/${id}/status`,
+    { status },
+  );
+  return data;
+}

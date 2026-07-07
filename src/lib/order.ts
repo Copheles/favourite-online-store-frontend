@@ -1,0 +1,52 @@
+import { toMoney } from "@/lib/format";
+
+export function getOrderNetTotal(order: {
+  totals?: { netTotal: unknown };
+  netTotal?: unknown;
+}): number {
+  return toMoney(order.totals?.netTotal ?? order.netTotal ?? 0);
+}
+
+export interface NormalizedOrderTotals {
+  subtotal: number;
+  itemDiscount: number;
+  orderDiscount: number;
+  deliveryFee: number;
+  taxAmount: number;
+  netTotal: number;
+}
+
+export function getOrderTotals(order: {
+  totals?: Partial<NormalizedOrderTotals>;
+  subtotal?: unknown;
+  itemDiscount?: unknown;
+  orderDiscount?: unknown;
+  deliveryFee?: unknown;
+  taxAmount?: unknown;
+  netTotal?: unknown;
+}): NormalizedOrderTotals {
+  const totals = order.totals;
+  return {
+    subtotal: toMoney(totals?.subtotal ?? order.subtotal ?? 0),
+    itemDiscount: toMoney(totals?.itemDiscount ?? order.itemDiscount ?? 0),
+    orderDiscount: toMoney(totals?.orderDiscount ?? order.orderDiscount ?? 0),
+    deliveryFee: toMoney(totals?.deliveryFee ?? order.deliveryFee ?? 0),
+    taxAmount: toMoney(totals?.taxAmount ?? order.taxAmount ?? 0),
+    netTotal: toMoney(totals?.netTotal ?? order.netTotal ?? 0),
+  };
+}
+
+export function getOrderCashierName(
+  cashier?: { username: string } | string | null,
+): string {
+  if (!cashier) return "-";
+  if (typeof cashier === "string") return cashier;
+  return cashier.username;
+}
+
+export function getOrderDate(order: {
+  date?: string;
+  createdAt?: string;
+}): string {
+  return order.date ?? order.createdAt ?? "";
+}
