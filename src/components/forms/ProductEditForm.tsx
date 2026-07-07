@@ -2,7 +2,6 @@ import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -135,12 +134,6 @@ export function ProductEditForm({
         <div className="rounded-lg border border-border bg-muted px-3 py-2 text-sm">
           <p className="font-medium text-foreground">
             {t("pos.sale.stock")}: {product.stockQty}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("pos.products.stockReadOnlyHint")}{" "}
-            <Link to="/stock" className="font-semibold text-primary underline">
-              {t("pos.modules.stock")}
-            </Link>
           </p>
         </div>
 

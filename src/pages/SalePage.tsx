@@ -23,6 +23,7 @@ import { PosModal } from "@/components/shared/pos/PosModal";
 import { RestockModal } from "@/components/shared/pos/RestockModal";
 import { OrderStatusBadge } from "@/components/shared/pos/OrderStatusBadge";
 import { ApiErrorAlert } from "@/components/forms/ApiErrorAlert";
+import { FormCustomerCombobox } from "@/components/forms/FormCustomerCombobox";
 import { FormSelect } from "@/components/forms/FormSelect";
 import { FormTextField } from "@/components/forms/FormTextField";
 import { FormTextareaField } from "@/components/forms/FormTextareaField";
@@ -41,7 +42,7 @@ import { useAppliedSearch } from "@/hooks/useAppliedSearch";
 import { useSaleCartResize } from "@/hooks/useSaleCartResize";
 import { useUrlEnumParam, useUrlLimit, useUrlPage, useUrlStringParam, useUrlQueryUpdater } from "@/hooks/useUrlQuery";
 import { useCategories } from "@/hooks/useAdmin";
-import { useCustomers } from "@/hooks/useCustomers";
+import { getCustomer } from "@/apis/customer.api";
 import { useOrderReceipt } from "@/hooks/useOrders";
 import {
   useCheckout,
@@ -148,6 +149,7 @@ export function SalePage() {
   const [completedOrder, setCompletedOrder] = useState<OrderDetail | null>(
     null,
   );
+  const [selectedCustomerName, setSelectedCustomerName] = useState("");
 
   const topCategoriesQuery = useCategories("TOP");
   const subCategoriesQuery = useCategories("SUB");
@@ -243,7 +245,6 @@ export function SalePage() {
     });
   }, [productQuery.data, productQuery.isFetching, productPage]);
 
-  const customersQuery = useCustomers({ page: 1, limit: 100, isActive: true });
   const checkoutMutation = useCheckout();
 
   const subtotal = useMemo(() => calcCartSubtotal(cart), [cart]);
@@ -369,12 +370,10 @@ export function SalePage() {
   function buildDraftFromCurrent(): SaleDraft | null {
     if (cartRef.current.length === 0) return null;
     const values = form.getValues();
-    const customer = customersQuery.data?.items.find(
-      (c) => c.id === values.customerId,
-    );
-    const label = customer?.name?.trim()
-      ? customer.name.trim()
-      : t("pos.sale.draftLabel", { time: formatDateTime(new Date().toISOString()) });
+    const label =
+      values.customerId && selectedCustomerName.trim()
+        ? selectedCustomerName.trim()
+        : t("pos.sale.draftLabel", { time: formatDateTime(new Date().toISOString()) });
     return {
       id: createDraftId(),
       label,
@@ -403,6 +402,7 @@ export function SalePage() {
       orderDiscount: 0,
       notes: "",
     });
+    setSelectedCustomerName("");
   }
 
   function handleHoldOrder() {
@@ -433,6 +433,13 @@ export function SalePage() {
       orderDiscount: draft.checkout.orderDiscount,
       notes: draft.checkout.notes,
     });
+    if (draft.checkout.customerId) {
+      void getCustomer(draft.checkout.customerId)
+        .then((customer) => setSelectedCustomerName(customer.name))
+        .catch(() => setSelectedCustomerName(""));
+    } else {
+      setSelectedCustomerName("");
+    }
     setDraftsOpen(false);
     showToast("info", t("pos.sale.draftResumed"));
   }
@@ -499,14 +506,6 @@ export function SalePage() {
       />
     );
   }
-
-  const customerOptions = [
-    { value: "", label: t("pos.sale.walkIn") },
-    ...(customersQuery.data?.items.map((c) => ({
-      value: c.id,
-      label: c.name,
-    })) ?? []),
-  ];
 
   const statusOptions = [
     { value: "COMPLETED", label: t("pos.sale.statusCompleted") },
@@ -754,14 +753,16 @@ export function SalePage() {
             >
               <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4">
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <FormSelect
+                  <FormCustomerCombobox
                     control={form.control}
                     name="customerId"
                     label={t("pos.sale.member")}
-                    options={customerOptions}
-                    size="sm"
+                    walkInLabel={t("pos.sale.walkIn")}
                     labelClassName={saleCheckoutLabelClass}
                     controlClassName={saleCheckoutControlClass}
+                    onCustomerChange={(customer) =>
+                      setSelectedCustomerName(customer?.name ?? "")
+                    }
                   />
                   <FormSelect
                     control={form.control}

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createCustomer,
   deleteCustomer,
+  getCustomer,
   listCustomers,
   updateCustomer,
   type ListCustomersParams,
@@ -10,12 +11,25 @@ import type { Customer, CustomerInput } from "@/types/api";
 import { STALE_TIME } from "@/lib/queryConfig";
 import { queryKeys } from "@/lib/queryKeys";
 
-export function useCustomers(params: ListCustomersParams) {
+export function useCustomers(
+  params: ListCustomersParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: queryKeys.customers.list(params),
     queryFn: () => listCustomers(params),
     staleTime: STALE_TIME.catalog,
     placeholderData: (prev) => prev,
+    enabled: options?.enabled ?? true,
+  });
+}
+
+export function useCustomer(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.customers.detail(id ?? ""),
+    queryFn: () => getCustomer(id!),
+    staleTime: STALE_TIME.catalog,
+    enabled: Boolean(id),
   });
 }
 
