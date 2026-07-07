@@ -7,6 +7,8 @@ import {
   HelpCircle,
   Languages,
   LogOut,
+  Maximize2,
+  Minimize2,
   Monitor,
   Moon,
   Settings,
@@ -125,6 +127,9 @@ export function PosHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(
+    () => typeof document !== "undefined" && !!document.fullscreenElement,
+  );
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isSale = location.pathname === "/sale";
@@ -143,6 +148,16 @@ export function PosHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    function handleFullscreenChange() {
+      setIsFullscreen(!!document.fullscreenElement);
+    }
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
   function toggleLanguage() {
     const nextLang = i18n.language === "my" ? "en" : "my";
     i18n.changeLanguage(nextLang);
@@ -153,6 +168,18 @@ export function PosHeader() {
     if (theme === "light") setTheme("dark");
     else if (theme === "dark") setTheme("system");
     else setTheme("light");
+  }
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+      await document.documentElement.requestFullscreen();
+    } catch {
+      // Browser may block fullscreen without a direct user gesture.
+    }
   }
 
   const initials = user?.username
@@ -216,6 +243,23 @@ export function PosHeader() {
               onClick={toggleLanguage}
               className="hidden md:inline-flex"
             />
+
+            <HeaderIconButton
+              title={
+                isFullscreen
+                  ? t("header.exitFullscreen")
+                  : t("header.enterFullscreen")
+              }
+              active={isFullscreen}
+              onClick={toggleFullscreen}
+              className="hidden md:inline-flex"
+            >
+              {isFullscreen ? (
+                <Minimize2 className="size-4" />
+              ) : (
+                <Maximize2 className="size-4" />
+              )}
+            </HeaderIconButton>
 
             <HeaderIconButton
               title={themeLabel}

@@ -38,6 +38,7 @@ import { PosFilterTabs } from "@/components/shared/pos/PosFilterTabs";
 import { PosSearchBar } from "@/components/shared/pos/PosSearchBar";
 import { PosToaster, usePosToast } from "@/components/shared/pos/PosToast";
 import { useAppliedSearch } from "@/hooks/useAppliedSearch";
+import { useSaleCartResize } from "@/hooks/useSaleCartResize";
 import { useUrlEnumParam, useUrlLimit, useUrlPage, useUrlStringParam, useUrlQueryUpdater } from "@/hooks/useUrlQuery";
 import { useCategories } from "@/hooks/useAdmin";
 import { useCustomers } from "@/hooks/useCustomers";
@@ -90,9 +91,31 @@ const PAYMENT_OPTIONS = [
   { value: "BANKING", label: "BANKING" },
 ];
 
+const saleCheckoutControlClass =
+  "h-8 text-xs lg:h-8 lg:text-xs xl:h-9 xl:text-sm";
+const saleCheckoutLabelClass = "text-[11px] xl:text-xs";
+const saleCheckoutTextareaClass =
+  "min-h-[3.5rem] resize-none text-xs xl:min-h-[4.5rem] xl:text-sm";
+
 export function SalePage() {
   const { t } = useTranslation();
   const { toasts, showToast, dismiss } = usePosToast();
+  const {
+    saleLayoutRef,
+    cartColumnRef,
+    cartHeaderRef,
+    cartListRef,
+    listHeightPx,
+    listRatio,
+    cartWidthPx,
+    widthRatio,
+    minListRatio,
+    maxListRatio,
+    minWidthRatio,
+    maxWidthRatio,
+    startListResize,
+    startWidthResize,
+  } = useSaleCartResize();
   const {
     searchInput,
     setSearchInput,
@@ -497,6 +520,7 @@ export function SalePage() {
   return (
     <>
     <PosPageShell
+      ref={saleLayoutRef}
       fullHeight
       className="flex h-full min-h-0 flex-col overflow-hidden lg:flex-row"
     >
@@ -540,12 +564,22 @@ export function SalePage() {
       </div>
 
       <div
+        ref={cartColumnRef}
         className={cn(
-          "min-h-0 w-full flex-col overflow-hidden border-b border-border bg-card lg:h-full lg:w-[560px] lg:shrink-0 lg:flex-col lg:border-b-0 lg:border-r xl:w-[620px] 2xl:w-[660px]",
+          "min-h-0 w-full flex-col overflow-hidden border-b border-border bg-card lg:h-full lg:w-[var(--sale-cart-width)] lg:max-w-[var(--sale-cart-width)] lg:basis-[var(--sale-cart-width)] lg:shrink-0 lg:flex-col lg:border-b-0 lg:border-r",
           mobileView === "cart" ? "flex max-lg:flex-1" : "hidden lg:flex",
         )}
+        style={
+          {
+            "--sale-cart-width":
+              cartWidthPx > 0 ? `${cartWidthPx}px` : `${Math.round(widthRatio * 100)}%`,
+          } as React.CSSProperties
+        }
       >
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 px-4 py-2.5 sm:px-5">
+        <div
+          ref={cartHeaderRef}
+          className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 px-4 py-2.5 sm:px-5"
+        >
           <p className="min-w-0 truncate text-sm">
             <span className="font-medium text-foreground">{t("pos.sale.cart")}</span>
             <span className="text-muted-foreground">
@@ -599,7 +633,14 @@ export function SalePage() {
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-5">
+        <div
+          ref={cartListRef}
+          className={cn(
+            "flex shrink-0 flex-col overflow-hidden px-4 py-3 sm:px-5",
+            listHeightPx <= 0 && "min-h-0 flex-[0.58]",
+          )}
+          style={listHeightPx > 0 ? { height: listHeightPx } : undefined}
+        >
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/70 bg-card">
             {cart.length === 0 ? (
               <SaleCartEmpty />
@@ -692,102 +733,147 @@ export function SalePage() {
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-border bg-card px-4 py-3 sm:px-5 sm:py-4">
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-valuemin={Math.round(minListRatio * 100)}
+          aria-valuemax={Math.round(maxListRatio * 100)}
+          aria-valuenow={Math.round(listRatio * 100)}
+          aria-label={t("pos.sale.resizeCartList")}
+          onPointerDown={startListResize}
+          className="group flex h-2.5 shrink-0 cursor-ns-resize touch-none select-none items-center justify-center border-y border-border/60 bg-muted/20 hover:bg-muted/40 active:bg-muted/50"
+        >
+          <span className="h-1 w-10 rounded-full bg-border transition-colors group-hover:bg-muted-foreground/50" />
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-card">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onCheckout)}
-              className="space-y-2.5"
+              className="flex min-h-0 flex-1 flex-col"
             >
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <FormSelect
+                    control={form.control}
+                    name="customerId"
+                    label={t("pos.sale.member")}
+                    options={customerOptions}
+                    size="sm"
+                    labelClassName={saleCheckoutLabelClass}
+                    controlClassName={saleCheckoutControlClass}
+                  />
+                  <FormSelect
+                    control={form.control}
+                    name="paymentType"
+                    label={t("pos.sale.paymentType")}
+                    options={PAYMENT_OPTIONS}
+                    size="sm"
+                    labelClassName={saleCheckoutLabelClass}
+                    controlClassName={saleCheckoutControlClass}
+                  />
+                </div>
+
                 <FormSelect
                   control={form.control}
-                  name="customerId"
-                  label={t("pos.sale.member")}
-                  options={customerOptions}
+                  name="status"
+                  label={t("pos.sale.orderStatus")}
+                  options={statusOptions}
+                  size="sm"
+                  labelClassName={saleCheckoutLabelClass}
+                  controlClassName={saleCheckoutControlClass}
                 />
-                <FormSelect
+
+                <div className="grid grid-cols-2 gap-2">
+                  <FormTextField
+                    control={form.control}
+                    name="paidAmount"
+                    label={t("pos.sale.paidAmount")}
+                    type="number"
+                    min={0}
+                    labelClassName={saleCheckoutLabelClass}
+                    controlClassName={saleCheckoutControlClass}
+                  />
+                  <FormTextField
+                    control={form.control}
+                    name="orderDiscount"
+                    label={t("pos.sale.orderDiscount")}
+                    type="number"
+                    min={0}
+                    labelClassName={saleCheckoutLabelClass}
+                    controlClassName={saleCheckoutControlClass}
+                  />
+                </div>
+
+                <FormTextareaField
                   control={form.control}
-                  name="paymentType"
-                  label={t("pos.sale.paymentType")}
-                  options={PAYMENT_OPTIONS}
+                  name="notes"
+                  label={t("pos.sale.orderNotes")}
+                  placeholder={t("pos.sale.orderNotesPlaceholder")}
+                  rows={2}
+                  labelClassName={saleCheckoutLabelClass}
+                  controlClassName={saleCheckoutTextareaClass}
                 />
-              </div>
 
-              <FormSelect
-                control={form.control}
-                name="status"
-                label={t("pos.sale.orderStatus")}
-                options={statusOptions}
-              />
-
-              <div className="grid grid-cols-2 gap-2">
-                <FormTextField
-                  control={form.control}
-                  name="paidAmount"
-                  label={t("pos.sale.paidAmount")}
-                  type="number"
-                  min={0}
-                />
-                <FormTextField
-                  control={form.control}
-                  name="orderDiscount"
-                  label={t("pos.sale.orderDiscount")}
-                  type="number"
-                  min={0}
-                />
-              </div>
-
-              <FormTextareaField
-                control={form.control}
-                name="notes"
-                label={t("pos.sale.orderNotes")}
-                placeholder={t("pos.sale.orderNotesPlaceholder")}
-                rows={2}
-              />
-
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm">
-                <div className="flex items-center gap-3">
-                  <span className="text-muted-foreground">
-                    {t("pos.sale.subtotal")}{" "}
-                    <span className="font-medium text-foreground">
-                      {formatMoney(subtotal)}
-                    </span>
-                  </span>
-                  {Number(orderDiscount) > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs xl:text-sm">
+                  <div className="flex items-center gap-3">
                     <span className="text-muted-foreground">
-                      −{formatMoney(Number(orderDiscount) || 0)}
+                      {t("pos.sale.subtotal")}{" "}
+                      <span className="font-medium text-foreground">
+                        {formatMoney(subtotal)}
+                      </span>
+                    </span>
+                    {Number(orderDiscount) > 0 && (
+                      <span className="text-muted-foreground">
+                        −{formatMoney(Number(orderDiscount) || 0)}
+                      </span>
+                    )}
+                  </div>
+                  {paymentType === "CASH" && changeAmount > 0 && (
+                    <span className="font-medium text-success-foreground">
+                      {t("pos.sale.change")}: {formatMoney(changeAmount)}
                     </span>
                   )}
                 </div>
-                {paymentType === "CASH" && changeAmount > 0 && (
-                  <span className="font-medium text-success-foreground">
-                    {t("pos.sale.change")}: {formatMoney(changeAmount)}
-                  </span>
-                )}
               </div>
 
-              <ApiErrorAlert
-                error={checkoutMutation.error}
-                fallback={t("pos.sale.checkoutError")}
-              />
+              <div className="shrink-0 space-y-2 border-t border-border bg-card px-4 py-3 sm:px-5">
+                <ApiErrorAlert
+                  error={checkoutMutation.error}
+                  fallback={t("pos.sale.checkoutError")}
+                />
 
-              <Button
-                type="submit"
-                className="h-11 w-full text-sm font-semibold"
-                disabled={cart.length === 0 || checkoutMutation.isPending}
-              >
-                {checkoutMutation.isPending
-                  ? t("pos.sale.processing")
-                  : `${t("pos.sale.checkout")} · ${formatMoney(netTotal)}`}
-              </Button>
+                <Button
+                  type="submit"
+                  className="h-9 w-full text-sm font-semibold xl:h-10"
+                  disabled={cart.length === 0 || checkoutMutation.isPending}
+                >
+                  {checkoutMutation.isPending
+                    ? t("pos.sale.processing")
+                    : `${t("pos.sale.checkout")} · ${formatMoney(netTotal)}`}
+                </Button>
+              </div>
             </form>
           </Form>
         </div>
       </div>
 
       <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-valuemin={Math.round(minWidthRatio * 100)}
+        aria-valuemax={Math.round(maxWidthRatio * 100)}
+        aria-valuenow={Math.round(widthRatio * 100)}
+        aria-label={t("pos.sale.resizeCartWidth")}
+        onPointerDown={startWidthResize}
+        className="group hidden h-full w-2.5 shrink-0 cursor-ew-resize touch-none select-none items-center justify-center border-x border-border/60 bg-muted/20 hover:bg-muted/40 active:bg-muted/50 lg:flex"
+      >
+        <span className="h-10 w-1 rounded-full bg-border transition-colors group-hover:bg-muted-foreground/50" />
+      </div>
+
+      <div
         className={cn(
-          "min-h-0 flex-1 flex-col",
+          "min-h-0 flex-1 flex-col lg:min-w-0",
           mobileView === "products" ? "flex" : "hidden lg:flex",
         )}
       >
@@ -914,7 +1000,7 @@ export function SalePage() {
           {!productQuery.isFetching && allProducts.length === 0 && (
             <EmptyState message={t("pos.sale.noProducts")} />
           )}
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]">
             {allProducts.map((product) => (
               <SaleProductCard
                 key={product.productId}
@@ -1246,23 +1332,26 @@ function SaleProductCard({
     ? t("pos.sale.outOfStock")
     : t("pos.sale.stockLeft", { count: product.stockQty });
 
+  const priceClassName =
+    "truncate text-sm font-semibold tabular-nums tracking-tight sm:text-base lg:text-[15px] xl:text-[17px] 2xl:text-lg text-foreground";
+
   return (
     <button
       type="button"
       disabled={!inStock}
       onClick={onAdd}
       className={cn(
-        "group flex min-h-[132px] flex-col rounded-xl border p-3.5 text-left transition-[border-color,background-color,box-shadow,opacity] duration-150",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25",
+        "group flex min-h-[112px] flex-col rounded-xl border p-2.5 text-left transition-[border-color,background-color,box-shadow] duration-150 sm:min-h-[120px] sm:p-3 lg:min-h-[128px] lg:p-3 xl:min-h-[132px] xl:p-3.5",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 disabled:opacity-100",
         inStock
-          ? "cursor-pointer border-border/80 bg-card hover:border-primary/25 hover:bg-primary/[0.04] hover:shadow-sm active:scale-[0.99]"
-          : "cursor-not-allowed border-dashed border-border/70 bg-muted/25 opacity-80",
+          ? "relative cursor-pointer border-border/80 bg-card hover:border-primary/25 hover:bg-primary/[0.04] hover:shadow-sm active:scale-[0.99]"
+          : "relative cursor-not-allowed border-border/60 bg-muted/20 ring-1 ring-inset ring-border/40",
       )}
     >
       <p
         className={cn(
-          "line-clamp-2 flex-1 text-[15px] font-medium leading-snug sm:text-base",
-          inStock ? "text-foreground/90" : "text-muted-foreground",
+          "line-clamp-2 flex-1 text-xs font-medium leading-snug sm:text-sm lg:text-sm lg:leading-normal xl:text-base 2xl:text-[17px] 2xl:leading-snug",
+          inStock ? "text-foreground/90" : "text-foreground/80",
         )}
       >
         {product.name}
@@ -1270,24 +1359,18 @@ function SaleProductCard({
 
       <div
         className={cn(
-          "mt-3 flex items-end justify-between gap-2 border-t pt-3",
+          "mt-3 flex items-center justify-between gap-2 border-t pt-3",
           inStock ? "border-border/50" : "border-border/40",
         )}
       >
-        <span
-          className={cn(
-            "truncate text-base font-semibold tabular-nums tracking-tight sm:text-[17px]",
-            inStock ? "text-foreground" : "text-muted-foreground/70",
-          )}
-        >
+        <span className={priceClassName}>
           {formatMoney(product.finalPrice)}
         </span>
 
         <span
           className={cn(
-            "shrink-0 rounded-md px-2 py-0.5 text-xs font-medium tabular-nums sm:text-[13px]",
-            !inStock &&
-              "border border-destructive/20 bg-destructive/8 text-destructive/80",
+            "shrink-0 rounded-md px-2 py-0.5 text-[10px] font-medium tabular-nums sm:text-xs lg:text-[11px] xl:text-xs 2xl:text-[13px]",
+            !inStock && "border border-destructive/20 bg-destructive/10 text-destructive/90",
             inStock && lowStock && "bg-amber-500/10 text-amber-800/90 dark:text-amber-200/90",
             inStock && !lowStock && "bg-muted/60 text-muted-foreground",
           )}

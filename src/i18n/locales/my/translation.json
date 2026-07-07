@@ -64,7 +64,9 @@
     "profile": "ပရိုဖိုင်",
     "settings": "ဆက်တင်များ",
     "logout": "ထွက်ရန်",
-    "theme": "အရောင်စနစ်: {{theme}}"
+    "theme": "အရောင်စနစ်: {{theme}}",
+    "enterFullscreen": "Full screen",
+    "exitFullscreen": "Full screen ထွက်ရန်"
   },
   "language": {
     "english": "English",
@@ -162,7 +164,7 @@
       "emptyCart": "Cart ဗလာဖြစ်နေသည်။",
       "emptyCartHint": "ကုန်ပစ္စည်းများကို ရွေးချယ်ပြီး cart ထဲ ထည့်ပါ။",
       "stock": "စတော့",
-      "outOfStock": "စတော့ မရှိ",
+      "outOfStock": "No stock",
       "stockLeft_one": "{{count}} ကျန်",
       "stockLeft_other": "{{count}} ကျန်",
       "member": "Member",
@@ -203,6 +205,8 @@
       "newSale": "ရောင်းချ အသစ်",
       "change": "Change",
       "clearCart": "Clear cart",
+      "resizeCartList": "Cart list အမြင့် resize လုပ်ရန်",
+      "resizeCartWidth": "Cart panel အကျယ် resize လုပ်ရန်",
       "cartCleared": "Cart cleared.",
       "barcodeNotFound": "No product matches this barcode.",
       "productOutOfStock": "{{name}} is out of stock.",

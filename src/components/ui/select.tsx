@@ -47,7 +47,11 @@ function toExternalValue(value: string): string {
   return value === EMPTY_VALUE ? "" : value;
 }
 
-type SelectProps = Omit<React.ComponentProps<"select">, "size">;
+type SelectProps = Omit<React.ComponentProps<"select">, "size"> & {
+  size?: SelectSize;
+};
+
+export type SelectSize = "default" | "sm";
 
 const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
   (
@@ -61,6 +65,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       disabled,
       id,
       name,
+      size = "default",
       "aria-label": ariaLabel,
     },
     ref,
@@ -94,7 +99,13 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
     };
 
     return (
-      <div className={cn("relative w-full min-w-0 min-h-10", className)}>
+      <div
+        className={cn(
+          "relative w-full min-w-0",
+          size === "sm" ? "min-h-8 xl:min-h-9" : "min-h-10",
+          className,
+        )}
+      >
         <SelectPrimitive.Root
           value={internalValue}
           defaultValue={
@@ -111,7 +122,12 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             ref={ref}
             id={id}
             aria-label={ariaLabel}
-            className="relative flex h-full w-full min-w-0 items-center rounded-lg border border-input bg-background py-2 pl-3 pr-9 text-sm leading-normal shadow-xs transition-all hover:border-ring/40 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground"
+            className={cn(
+              "relative flex h-full w-full min-w-0 items-center rounded-lg border border-input bg-background py-2 pl-3 pr-9 leading-normal shadow-xs transition-all hover:border-ring/40 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground",
+              size === "sm"
+                ? "text-xs lg:text-xs xl:text-sm"
+                : "text-sm",
+            )}
           >
             <SelectPrimitive.Value
               className="min-w-0 flex-1 truncate text-left"
@@ -138,7 +154,12 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                       key={itemValue}
                       value={itemValue}
                       disabled={option.disabled}
-                      className="relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-8 pr-2 text-sm outline-none focus:bg-muted focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                      className={cn(
+                        "relative flex w-full cursor-default select-none items-center rounded-md pl-8 pr-2 outline-none focus:bg-muted focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+                        size === "sm"
+                          ? "py-1.5 text-xs xl:py-2 xl:text-sm"
+                          : "py-2 text-sm",
+                      )}
                     >
                       <span className="absolute left-2 flex size-3.5 items-center justify-center">
                         <SelectPrimitive.ItemIndicator>

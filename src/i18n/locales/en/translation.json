@@ -64,7 +64,9 @@
     "profile": "Profile",
     "settings": "Settings",
     "logout": "Logout",
-    "theme": "Theme: {{theme}}"
+    "theme": "Theme: {{theme}}",
+    "enterFullscreen": "Enter full screen",
+    "exitFullscreen": "Exit full screen"
   },
   "language": {
     "english": "English",
@@ -162,7 +164,7 @@
       "emptyCart": "Cart is empty.",
       "emptyCartHint": "Select products from the list to add them here.",
       "stock": "Stock",
-      "outOfStock": "Out of stock",
+      "outOfStock": "No stock",
       "stockLeft_one": "{{count}} left",
       "stockLeft_other": "{{count}} left",
       "member": "Member",
@@ -203,6 +205,8 @@
       "newSale": "New sale",
       "change": "Change",
       "clearCart": "Clear cart",
+      "resizeCartList": "Resize cart list height",
+      "resizeCartWidth": "Resize cart panel width",
       "cartCleared": "Cart cleared.",
       "barcodeNotFound": "No product matches this barcode.",
       "productOutOfStock": "{{name}} is out of stock.",

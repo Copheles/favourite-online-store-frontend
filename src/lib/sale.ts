@@ -114,3 +114,61 @@ export function saveDrafts(drafts: SaleDraft[]) {
 export function createDraftId(): string {
   return `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+export const CART_LIST_RATIO_KEY = "pos-sale-cart-list-ratio-v1";
+export const DEFAULT_CART_LIST_RATIO = 0.58;
+export const MIN_CART_LIST_RATIO = 0.32;
+export const MAX_CART_LIST_RATIO = 0.78;
+
+export function clampCartListRatio(ratio: number): number {
+  return Math.min(MAX_CART_LIST_RATIO, Math.max(MIN_CART_LIST_RATIO, ratio));
+}
+
+export function loadCartListRatio(): number {
+  try {
+    const raw = localStorage.getItem(CART_LIST_RATIO_KEY);
+    if (!raw) return DEFAULT_CART_LIST_RATIO;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return DEFAULT_CART_LIST_RATIO;
+    return clampCartListRatio(parsed);
+  } catch {
+    return DEFAULT_CART_LIST_RATIO;
+  }
+}
+
+export function persistCartListRatio(ratio: number) {
+  try {
+    localStorage.setItem(CART_LIST_RATIO_KEY, String(clampCartListRatio(ratio)));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+export const CART_WIDTH_RATIO_KEY = "pos-sale-cart-width-ratio-v1";
+export const DEFAULT_CART_WIDTH_RATIO = 0.35;
+export const MIN_CART_WIDTH_RATIO = 0.25;
+export const MAX_CART_WIDTH_RATIO = 0.5;
+
+export function clampCartWidthRatio(ratio: number): number {
+  return Math.min(MAX_CART_WIDTH_RATIO, Math.max(MIN_CART_WIDTH_RATIO, ratio));
+}
+
+export function loadCartWidthRatio(): number {
+  try {
+    const raw = localStorage.getItem(CART_WIDTH_RATIO_KEY);
+    if (!raw) return DEFAULT_CART_WIDTH_RATIO;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return DEFAULT_CART_WIDTH_RATIO;
+    return clampCartWidthRatio(parsed);
+  } catch {
+    return DEFAULT_CART_WIDTH_RATIO;
+  }
+}
+
+export function persistCartWidthRatio(ratio: number) {
+  try {
+    localStorage.setItem(CART_WIDTH_RATIO_KEY, String(clampCartWidthRatio(ratio)));
+  } catch {
+    // ignore quota errors
+  }
+}

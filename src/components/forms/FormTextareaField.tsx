@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
+import { cn } from "@/lib/utils";
 
 interface FormTextareaFieldProps<T extends FieldValues> {
   control: Control<T>;
@@ -15,6 +16,8 @@ interface FormTextareaFieldProps<T extends FieldValues> {
   placeholder?: string;
   rows?: number;
   className?: string;
+  labelClassName?: string;
+  controlClassName?: string;
 }
 
 export function FormTextareaField<T extends FieldValues>({
@@ -24,6 +27,8 @@ export function FormTextareaField<T extends FieldValues>({
   placeholder,
   rows = 3,
   className,
+  labelClassName,
+  controlClassName,
 }: FormTextareaFieldProps<T>) {
   return (
     <FormField
@@ -31,13 +36,19 @@ export function FormTextareaField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel className="text-xs font-semibold text-muted-foreground">
+          <FormLabel
+            className={cn(
+              "text-xs font-semibold text-muted-foreground",
+              labelClassName,
+            )}
+          >
             {label}
           </FormLabel>
           <FormControl>
             <Textarea
               rows={rows}
               placeholder={placeholder}
+              className={controlClassName}
               {...field}
               value={field.value ?? ""}
             />

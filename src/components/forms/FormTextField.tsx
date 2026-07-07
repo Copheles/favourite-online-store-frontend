@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
+import { cn } from "@/lib/utils";
 
 interface FormTextFieldProps<T extends FieldValues> {
   control: Control<T>;
@@ -15,6 +16,9 @@ interface FormTextFieldProps<T extends FieldValues> {
   type?: string;
   placeholder?: string;
   min?: number;
+  className?: string;
+  labelClassName?: string;
+  controlClassName?: string;
 }
 
 export function FormTextField<T extends FieldValues>({
@@ -24,14 +28,22 @@ export function FormTextField<T extends FieldValues>({
   type = "text",
   placeholder,
   min,
+  className,
+  labelClassName,
+  controlClassName,
 }: FormTextFieldProps<T>) {
   return (
     <FormField
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem>
-          <FormLabel className="text-xs font-semibold text-muted-foreground">
+        <FormItem className={className}>
+          <FormLabel
+            className={cn(
+              "text-xs font-semibold text-muted-foreground",
+              labelClassName,
+            )}
+          >
             {label}
           </FormLabel>
           <FormControl>
@@ -39,6 +51,7 @@ export function FormTextField<T extends FieldValues>({
               type={type}
               min={min}
               placeholder={placeholder}
+              className={controlClassName}
               {...field}
               value={field.value ?? ""}
               onChange={(event) => {
