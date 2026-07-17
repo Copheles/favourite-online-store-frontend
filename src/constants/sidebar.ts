@@ -2,7 +2,6 @@ import type { IconSvgElement } from "@hugeicons/react";
 import {
   DashboardSquare01Icon,
   Package01Icon,
-  DeliveryTruck01Icon,
   UserGroupIcon,
   ChartHistogramIcon,
   Settings01Icon,

@@ -12,9 +12,10 @@ export function useBranch() {
 
   const isAdmin = user?.role?.toLowerCase() === "admin";
   /** Cashiers are locked to their home branch; admins may view others. */
-  const currentBranchId = isAdmin
-    ? storedBranchId
-    : (user?.defaultBranchId ?? storedBranchId);
+  const currentBranchId =
+    (isAdmin
+      ? storedBranchId
+      : (user?.defaultBranchId ?? storedBranchId)) ?? undefined;
 
   const currentBranch = accessibleBranches.find(
     (branch) => branch.id === currentBranchId,
