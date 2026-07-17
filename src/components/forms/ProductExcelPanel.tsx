@@ -180,7 +180,7 @@ export function ProductExcelPanel({
             <Stat label={t("pos.excel.stats.updated")} value={summary.updatedProducts} />
             <Stat
               label={t("pos.excel.stats.stockMoves")}
-              value={summary.stockMovementsCreated}
+              value={summary.stockQtyAdjusted}
             />
             <Stat label={t("pos.excel.stats.skipped")} value={summary.skippedRows} />
           </div>

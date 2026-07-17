@@ -7,6 +7,7 @@ import type {
 } from "@/types/api";
 
 export interface ListCustomersParams {
+  branchId?: string;
   search?: string;
   contact?: "WITH_PHONE" | "NO_PHONE";
   isActive?: boolean;
@@ -23,27 +24,44 @@ export async function listCustomers(
   return data;
 }
 
-export async function getCustomer(id: string): Promise<Customer> {
-  const { data } = await axiosClient.get<Customer>(`/api/customers/${id}`);
+export async function getCustomer(
+  id: string,
+  branchId?: string,
+): Promise<Customer> {
+  const { data } = await axiosClient.get<Customer>(
+    `/api/customers/${id}${toQueryString({ branchId })}`,
+  );
   return data;
 }
 
-export async function createCustomer(input: CustomerInput): Promise<Customer> {
-  const { data } = await axiosClient.post<Customer>("/api/customers", input);
+export async function createCustomer(
+  input: CustomerInput,
+  branchId?: string,
+): Promise<Customer> {
+  const { data } = await axiosClient.post<Customer>(
+    `/api/customers${toQueryString({ branchId })}`,
+    input,
+  );
   return data;
 }
 
 export async function updateCustomer(
   id: string,
   input: Partial<CustomerInput>,
+  branchId?: string,
 ): Promise<Customer> {
   const { data } = await axiosClient.patch<Customer>(
-    `/api/customers/${id}`,
+    `/api/customers/${id}${toQueryString({ branchId })}`,
     input,
   );
   return data;
 }
 
-export async function deleteCustomer(id: string): Promise<void> {
-  await axiosClient.delete(`/api/customers/${id}`);
+export async function deleteCustomer(
+  id: string,
+  branchId?: string,
+): Promise<void> {
+  await axiosClient.delete(
+    `/api/customers/${id}${toQueryString({ branchId })}`,
+  );
 }

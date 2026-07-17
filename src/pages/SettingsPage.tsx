@@ -2,40 +2,34 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
-import {
-  CheckCircle2,
-  FileSpreadsheet,
-  KeyRound,
-  Settings,
-  UserPlus,
-} from "lucide-react";
+import { CheckCircle2, Gift, KeyRound, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { ApiErrorAlert } from "@/components/forms/ApiErrorAlert";
-import { FormSelect } from "@/components/forms/FormSelect";
 import { FormTextField } from "@/components/forms/FormTextField";
-import { ProductExcelPanel } from "@/components/forms/ProductExcelPanel";
 import { PageHeader } from "@/components/shared/PageStates";
 import { PosPageShell } from "@/components/shared/pos/PosPageShell";
+import { getStoreSettings, updateStoreSettings } from "@/apis/settings.api";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminMutations } from "@/hooks/useAdmin";
+import { queryKeys } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getPasswordSchema,
-  getStaffSchema,
+  getPointsSettingsSchema,
   type PasswordFormValues,
-  type StaffFormValues,
+  type PointsSettingsFormValues,
 } from "@/validation/settings.validation";
 
-type Tab = "password" | "staff" | "excel";
+type Tab = "password" | "loyalty";
 
 const TAB_META: Record<
   Tab,
   { icon: React.ElementType; descriptionKey: string }
 > = {
   password: { icon: KeyRound, descriptionKey: "pos.settings.passwordTabDesc" },
-  staff: { icon: UserPlus, descriptionKey: "pos.settings.staffTabDesc" },
-  excel: { icon: FileSpreadsheet, descriptionKey: "pos.settings.excelDescription" },
+  loyalty: { icon: Gift, descriptionKey: "pos.settings.loyaltyTabDesc" },
 };
 
 export function SettingsPage() {
@@ -45,9 +39,13 @@ export function SettingsPage() {
   const contentRef = useRef<HTMLDivElement>(null);
   const mutations = useAdminMutations();
 
-  const tabs: Tab[] = isAdmin
-    ? ["password", "staff", "excel"]
-    : ["password"];
+  const tabs: Tab[] = isAdmin ? ["password", "loyalty"] : ["password"];
+
+  useEffect(() => {
+    if (tab === "loyalty" && !isAdmin) {
+      setTab("password");
+    }
+  }, [isAdmin, tab]);
 
   useEffect(() => {
     contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -83,7 +81,7 @@ export function SettingsPage() {
         </div>
 
         {tabs.length > 1 && (
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             {tabs.map((item) => {
               const meta = TAB_META[item];
               const Icon = meta.icon;
@@ -135,10 +133,7 @@ export function SettingsPage() {
           {tab === "password" && (
             <PasswordTab mutation={mutations.changePassword} />
           )}
-          {tab === "staff" && isAdmin && (
-            <StaffTab mutation={mutations.createStaff} />
-          )}
-          {tab === "excel" && isAdmin && <ExcelTab />}
+          {tab === "loyalty" && isAdmin && <LoyaltyTab />}
         </div>
       </div>
     </PosPageShell>
@@ -233,28 +228,35 @@ function PasswordTab({
   );
 }
 
-function StaffTab({
-  mutation,
-}: {
-  mutation: ReturnType<typeof useAdminMutations>["createStaff"];
-}) {
+function LoyaltyTab() {
   const { t } = useTranslation();
-  const schema = useMemo(() => getStaffSchema(t), [t]);
-  const form = useForm<StaffFormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { username: "", password: "", role: "staff" },
+  const queryClient = useQueryClient();
+  const schema = useMemo(() => getPointsSettingsSchema(t), [t]);
+  const settingsQuery = useQuery({
+    queryKey: queryKeys.settings.store(),
+    queryFn: getStoreSettings,
   });
 
-  useEffect(() => {
-    if (mutation.isSuccess) form.reset();
-  }, [mutation.isSuccess, form]);
+  const form = useForm<PointsSettingsFormValues>({
+    resolver: zodResolver(schema),
+    values: {
+      pointsCashbackPercent: settingsQuery.data?.pointsCashbackPercent ?? 0.1,
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: updateStoreSettings,
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.settings.store(), data);
+    },
+  });
 
   return (
     <div className="mx-auto max-w-md">
       <SettingsSectionHeader
-        icon={UserPlus}
-        title={t("pos.settings.tabs.staff")}
-        description={t("pos.settings.staffTabDesc")}
+        icon={Gift}
+        title={t("pos.settings.tabs.loyalty")}
+        description={t("pos.settings.loyaltyTabDesc")}
       />
       <Form {...form}>
         <form
@@ -263,50 +265,28 @@ function StaffTab({
         >
           <FormTextField
             control={form.control}
-            name="username"
-            label={t("pos.settings.username")}
+            name="pointsCashbackPercent"
+            label={t("pos.settings.pointsCashbackPercent")}
+            type="number"
+            min={0}
           />
-          <FormTextField
-            control={form.control}
-            name="password"
-            label={t("pos.settings.newPassword")}
-            type="password"
-          />
-          <FormSelect
-            control={form.control}
-            name="role"
-            label={t("pos.settings.role")}
-            options={[
-              { value: "staff", label: "staff" },
-              { value: "admin", label: "admin" },
-            ]}
-          />
+          <p className="text-xs text-muted-foreground">
+            {t("pos.settings.pointsCashbackHint")}
+          </p>
           {mutation.isSuccess && (
-            <SuccessNote message={t("pos.settings.staffCreated")} />
+            <SuccessNote message={t("pos.settings.pointsSettingsSaved")} />
           )}
-          <ApiErrorAlert error={mutation.error} />
+          <ApiErrorAlert error={mutation.error || settingsQuery.error} />
           <div className="flex justify-end pt-1">
-            <Button type="submit" disabled={mutation.isPending}>
-              {t("pos.settings.createStaff")}
+            <Button
+              type="submit"
+              disabled={mutation.isPending || settingsQuery.isLoading}
+            >
+              {t("pos.common.save")}
             </Button>
           </div>
         </form>
       </Form>
-    </div>
-  );
-}
-
-function ExcelTab() {
-  const { t } = useTranslation();
-
-  return (
-    <div className="max-w-3xl">
-      <SettingsSectionHeader
-        icon={FileSpreadsheet}
-        title={t("pos.settings.tabs.excel")}
-        description={t("pos.settings.excelDescription")}
-      />
-      <ProductExcelPanel />
     </div>
   );
 }

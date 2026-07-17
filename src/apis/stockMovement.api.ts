@@ -9,7 +9,6 @@ export interface StockMovementProductRef {
   name: string;
   code: string;
   barcode: string | null;
-  stockQty: number;
 }
 
 export interface StockMovementUserRef {
@@ -21,6 +20,7 @@ export interface StockMovementUserRef {
 export interface StockMovement {
   id: string;
   productId: string;
+  branchId: string;
   productName?: string;
   productCode?: string;
   type: StockMovementType;
@@ -29,12 +29,14 @@ export interface StockMovement {
   note: string | null;
   purchaseDate: string;
   createdAt: string;
+  currentStockQty?: number;
   product?: StockMovementProductRef;
   createdBy?: StockMovementUserRef | null;
 }
 
 export interface CreateStockMovementInput {
   productId: string;
+  branchId?: string;
   type: StockMovementType;
   quantity: number;
   buyPrice?: number | null;
@@ -43,8 +45,8 @@ export interface CreateStockMovementInput {
 }
 
 export interface ListStockMovementsParams {
+  branchId?: string;
   productId?: string;
-  type?: StockMovementType;
   fromDate?: string;
   toDate?: string;
   search?: string;

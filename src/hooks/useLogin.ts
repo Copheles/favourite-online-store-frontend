@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
-import { login } from "@/apis/auth.api";
+import { login, getAccessibleBranches } from "@/apis/auth.api";
 import { suppressUnauthorizedEvents } from "@/lib/authSession";
 import { queryKeys } from "@/lib/queryKeys";
 import { loginSuccess } from "@/redux/slices/authSlice";
+import { setBranches } from "@/redux/slices/branchSlice";
 import { useAppDispatch } from "@/redux/hooks";
 import type { LoginCredentials } from "@/types/auth";
 
@@ -21,9 +22,18 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: (credentials: LoginCredentials) => login(credentials),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       suppressUnauthorizedEvents(10_000);
       dispatch(loginSuccess(data.user));
+      
+      // Fetch and set branch information
+      try {
+        const branchData = await getAccessibleBranches();
+        dispatch(setBranches(branchData));
+      } catch (error) {
+        console.error("Failed to fetch branch information:", error);
+      }
+      
       queryClient.resetQueries({ queryKey: queryKeys.auth.me(), exact: true });
       queryClient.setQueryData(queryKeys.auth.me(), data.user);
       navigate(getRedirectPath(location.state, "/dashboard"));

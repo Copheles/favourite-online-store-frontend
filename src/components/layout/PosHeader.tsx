@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { BrandLogo } from "@/components/layout/BrandLogo";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
+import { BranchSwitcher } from "@/components/shared/BranchSwitcher";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -218,6 +219,9 @@ export function PosHeader() {
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
+            <BranchSwitcher />
+            <HeaderDivider className="hidden sm:block" />
+
             {isSale && (
               <>
                 <HeaderIconButton

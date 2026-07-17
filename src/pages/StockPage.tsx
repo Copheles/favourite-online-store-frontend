@@ -23,7 +23,6 @@ import {
   PosRecordCard,
   PosRecordCardList,
 } from "@/components/shared/pos/PosRecordCard";
-import { PosFilterSelect } from "@/components/shared/pos/PosFilterSelect";
 import { PosPagination } from "@/components/shared/pos/PosPagination";
 import { PosSearchBar } from "@/components/shared/pos/PosSearchBar";
 import {
@@ -34,26 +33,17 @@ import { PosToolbar, PosToolbarActions, PosToolbarGroup } from "@/components/sha
 import { TableSkeleton } from "@/components/shared/pos/TableSkeleton";
 import { RestockModal } from "@/components/shared/pos/RestockModal";
 import { useAppliedSearch } from "@/hooks/useAppliedSearch";
-import { useUrlEnumParam, useUrlLimit, useUrlPage, useUrlStringParam } from "@/hooks/useUrlQuery";
+import { useBranch } from "@/hooks/useBranch";
+import { useUrlLimit, useUrlPage, useUrlStringParam } from "@/hooks/useUrlQuery";
 import { useInventoryBalance, useStockMovements } from "@/hooks/useStock";
 import { formatDate, formatMoney } from "@/lib/format";
-import {
-  MOVEMENT_TYPE_FILTERS,
-  type MovementTypeFilter,
-} from "@/lib/listFilters";
 import { PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/queryConfig";
 import { resetUrlPage } from "@/lib/urlQuery";
-
-const MOVEMENT_TYPE_STYLES: Record<string, string> = {
-  IN: "bg-success text-success-foreground",
-  OUT: "bg-destructive/10 text-destructive",
-  OUT_RETURN: "bg-warning text-warning-foreground",
-  REPACK: "bg-muted text-muted-foreground",
-};
 
 export function StockPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { canRestock, canWriteCatalog } = useBranch();
   const [, setSearchParams] = useSearchParams();
   const {
     searchInput,
@@ -64,11 +54,6 @@ export function StockPage() {
   } = useAppliedSearch();
   const [page, setPage] = useUrlPage();
   const [limit, setLimit] = useUrlLimit(PAGE_SIZE.stock, PAGE_SIZE_OPTIONS.stock);
-  const [typeFilter, setTypeFilter] = useUrlEnumParam<MovementTypeFilter>(
-    "type",
-    "ALL",
-    MOVEMENT_TYPE_FILTERS,
-  );
   const [fromDate, setFromDate] = useUrlStringParam("from");
   const [toDate, setToDate] = useUrlStringParam("to");
   const [restockOpen, setRestockOpen] = useState(false);
@@ -83,7 +68,6 @@ export function StockPage() {
 
   const query = useStockMovements({
     search: appliedSearch || undefined,
-    type: typeFilter === "ALL" ? undefined : typeFilter,
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
     page,
@@ -97,7 +81,6 @@ export function StockPage() {
     setSearchInput("");
     setFromDate("");
     setToDate("");
-    setTypeFilter("ALL");
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete("q");
@@ -115,19 +98,25 @@ export function StockPage() {
         title={t("pos.modules.stockList")}
         description={t("pos.stock.historyDescription")}
         action={
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/products/create")}
-            >
-              <Plus className="size-4" />
-              {t("pos.settings.addProduct")}
-            </Button>
-            <Button onClick={() => setRestockOpen(true)}>
-              <PackagePlus className="size-4" />
-              {t("pos.stock.restock")}
-            </Button>
-          </div>
+          (canWriteCatalog || canRestock) ? (
+            <div className="flex flex-wrap gap-2">
+              {canWriteCatalog && (
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/products/create")}
+                >
+                  <Plus className="size-4" />
+                  {t("pos.settings.addProduct")}
+                </Button>
+              )}
+              {canRestock && (
+                <Button onClick={() => setRestockOpen(true)}>
+                  <PackagePlus className="size-4" />
+                  {t("pos.stock.restock")}
+                </Button>
+              )}
+            </div>
+          ) : undefined
         }
       />
 
@@ -157,7 +146,7 @@ export function StockPage() {
         <h2 className="mb-3 text-lg font-bold text-foreground">
           {t("pos.stock.movementHistory")}
         </h2>
-        <PosToolbar>
+        <PosToolbar className="mb-4">
           <PosToolbarGroup>
             <PosSearchBar
               value={searchInput}
@@ -186,19 +175,9 @@ export function StockPage() {
             </Button>
           </PosToolbarActions>
         </PosToolbar>
-
-        <div className="mb-4">
-          <PosFilterSelect
-            value={typeFilter}
-            options={MOVEMENT_TYPE_FILTERS}
-            onChange={setTypeFilter}
-            ariaLabel={t("pos.stock.movementType")}
-            getLabel={(value) => t(`pos.filters.movement.${value}`)}
-          />
-        </div>
       </div>
 
-      {query.isLoading && !query.data && <TableSkeleton rows={8} cols={7} />}
+      {query.isLoading && !query.data && <TableSkeleton rows={8} cols={6} />}
       {query.isError && <ErrorState />}
       {!query.isLoading && rows.length === 0 && (
         <EmptyState message={t("pos.stock.noMovements")} />
@@ -213,13 +192,8 @@ export function StockPage() {
                 title={row.product?.name ?? row.productName ?? "-"}
                 subtitle={row.product?.code ?? row.productCode ?? undefined}
                 trailing={
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                      MOVEMENT_TYPE_STYLES[row.type] ??
-                      "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {row.type}
+                  <span className="text-sm font-semibold text-foreground">
+                    +{row.quantity}
                   </span>
                 }
                 fields={[
@@ -227,7 +201,6 @@ export function StockPage() {
                     label: t("pos.stock.purchaseDate"),
                     value: formatDate(row.purchaseDate),
                   },
-                  { label: t("pos.stock.qty"), value: row.quantity },
                   {
                     label: t("pos.stock.buyPrice"),
                     value: row.buyPrice == null ? null : formatMoney(row.buyPrice),
@@ -245,7 +218,6 @@ export function StockPage() {
                 <tr>
                   <PosTableHeaderCell>{t("pos.stock.purchaseDate")}</PosTableHeaderCell>
                   <PosTableHeaderCell>{t("pos.stock.product")}</PosTableHeaderCell>
-                  <PosTableHeaderCell>{t("pos.stock.movementType")}</PosTableHeaderCell>
                   <PosTableHeaderCell>{t("pos.stock.qty")}</PosTableHeaderCell>
                   <PosTableHeaderCell>{t("pos.stock.buyPrice")}</PosTableHeaderCell>
                   <PosTableHeaderCell>{t("pos.members.note")}</PosTableHeaderCell>
@@ -262,16 +234,6 @@ export function StockPage() {
                       </span>
                       <span className="block text-xs text-muted-foreground">
                         {row.product?.code ?? row.productCode ?? ""}
-                      </span>
-                    </PosTableCell>
-                    <PosTableCell>
-                      <span
-                        className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                          MOVEMENT_TYPE_STYLES[row.type] ??
-                          "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {row.type}
                       </span>
                     </PosTableCell>
                     <PosTableCell>{row.quantity}</PosTableCell>
@@ -300,7 +262,9 @@ export function StockPage() {
         onPageSizeChange={setLimit}
       />
 
-      {restockOpen && <RestockModal onClose={() => setRestockOpen(false)} />}
+      {canRestock && restockOpen && (
+        <RestockModal onClose={() => setRestockOpen(false)} />
+      )}
     </PosPageShell>
   );
 }

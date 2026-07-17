@@ -15,7 +15,7 @@ interface FormTextFieldProps<T extends FieldValues> {
   label: string;
   type?: string;
   placeholder?: string;
-  min?: number;
+  min?: number | string;
   className?: string;
   labelClassName?: string;
   controlClassName?: string;

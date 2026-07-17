@@ -3,6 +3,7 @@ import { toQueryString } from "@/lib/queryParams";
 import type { PaginatedResponse, PosProduct, StockStatus } from "@/types/api";
 
 export interface ListPosProductsParams {
+  branchId?: string;
   search?: string;
   topCategoryId?: string;
   subCategoryId?: string;

@@ -2,11 +2,14 @@ import { axiosClient } from "@/lib/axios";
 import type { ChangePasswordInput, StaffInput } from "@/types/api";
 
 export async function createStaff(input: StaffInput): Promise<{ id: string }> {
-  const { data } = await axiosClient.post<{ id: string }>(
-    "/admin/staff",
-    input,
-  );
-  
+  const { data } = await axiosClient.post<{ id: string }>("/admin/staff", {
+    username: input.username,
+    initialPassword: input.password,
+    role: input.role,
+    defaultBranchId: input.defaultBranchId,
+    accessibleBranchIds: input.accessibleBranchIds,
+  });
+
   return data;
 }
 
@@ -16,7 +19,7 @@ export async function resetStaffPassword(
 ): Promise<{ ok: boolean }> {
   const { data } = await axiosClient.patch<{ ok: boolean }>(
     `/admin/staff/${id}/password`,
-    { password },
+    { newPassword: password },
   );
   return data;
 }

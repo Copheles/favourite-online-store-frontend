@@ -75,6 +75,8 @@ export interface SaleDraftCheckout {
   paymentType: PaymentType;
   paidAmount: number;
   orderDiscount: number;
+  deliveryFee: number;
+  orderDate: string;
   notes: string;
 }
 

@@ -46,6 +46,7 @@ export interface CheckoutItemInput {
 }
 
 export interface CheckoutInput {
+  branchId?: string;
   customerId?: string | null;
   items: CheckoutItemInput[];
   status?: OrderStatus;
@@ -55,6 +56,7 @@ export interface CheckoutInput {
   deliveryFee?: number;
   taxAmount?: number;
   notes?: string | null;
+  orderDate: string;
 }
 
 export interface OrderCustomer {
@@ -72,6 +74,7 @@ export interface OrderCashier {
 export interface OrderListItem {
   id: string;
   invoiceNumber: string;
+  dailySerial: number;
   customerName: string;
   subtotal: number;
   itemDiscount: number;
@@ -82,6 +85,7 @@ export interface OrderListItem {
   paymentType: PaymentType | null;
   status: OrderStatus;
   notes: string | null;
+  orderDate: string;
   createdAt: string;
 }
 
@@ -116,7 +120,9 @@ export interface OrderTotals {
 export interface OrderDetail {
   id: string;
   invoiceNumber: string;
+  dailySerial?: number;
   date?: string;
+  orderDate?: string;
   createdAt?: string;
   cashier?: OrderCashier | string | null;
   customer?: OrderCustomer;
@@ -138,6 +144,7 @@ export interface OrderDetail {
 export interface OrderReceipt {
   shopInfo: { name: string; address: string | null; phone: string | null };
   invoiceNumber: string;
+  dailySerial?: number;
   date: string;
   cashier?: OrderCashier | string | null;
   customer: OrderCustomer;
@@ -156,10 +163,12 @@ export interface OrderReceipt {
 
 export interface Customer {
   id: string;
+  branchId: string;
   name: string;
   phone: string | null;
   address: string | null;
   note: string | null;
+  pointsBalance: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -291,7 +300,7 @@ export interface ProductExcelImportSummary {
   createdCategories: number;
   createdProducts: number;
   updatedProducts: number;
-  stockMovementsCreated: number;
+  stockQtyAdjusted: number;
   skippedRows: number;
   errors: Record<string, string[]>;
   warnings: Record<string, string[]>;
@@ -338,6 +347,8 @@ export interface StaffInput {
   username: string;
   password: string;
   role: "admin" | "staff";
+  defaultBranchId?: string;
+  accessibleBranchIds?: string[];
 }
 
 export interface ChangePasswordInput {

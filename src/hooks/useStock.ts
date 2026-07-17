@@ -16,29 +16,38 @@ import {
 } from "@/apis/product.api";
 import { STALE_TIME } from "@/lib/queryConfig";
 import { queryKeys } from "@/lib/queryKeys";
+import { useBranch } from "./useBranch";
 
-export function useInventoryBalance(params: InventoryBalanceParams) {
+export function useInventoryBalance(params: Omit<InventoryBalanceParams, "branchId"> = {}) {
+  const { currentBranchId } = useBranch();
+  
   return useQuery({
-    queryKey: queryKeys.stock.balance(params),
-    queryFn: () => getInventoryBalance(params),
+    queryKey: queryKeys.stock.balance({ ...params, branchId: currentBranchId }),
+    queryFn: () => getInventoryBalance({ ...params, branchId: currentBranchId }),
     staleTime: STALE_TIME.reports,
     placeholderData: (prev) => prev,
+    enabled: !!currentBranchId,
   });
 }
 
-export function useStockMovements(params: ListStockMovementsParams) {
+export function useStockMovements(params: Omit<ListStockMovementsParams, "branchId"> = {}) {
+  const { currentBranchId } = useBranch();
+  
   return useQuery({
-    queryKey: queryKeys.stock.movements(params),
-    queryFn: () => listStockMovements(params),
+    queryKey: queryKeys.stock.movements({ ...params, branchId: currentBranchId }),
+    queryFn: () => listStockMovements({ ...params, branchId: currentBranchId }),
     staleTime: STALE_TIME.transactional,
     placeholderData: (prev) => prev,
+    enabled: !!currentBranchId,
   });
 }
 
 export function useStockMovementMutation() {
   const queryClient = useQueryClient();
+  const { currentBranchId } = useBranch();
   return useMutation({
-    mutationFn: (input: CreateStockMovementInput) => createStockMovement(input),
+    mutationFn: (input: CreateStockMovementInput) =>
+      createStockMovement({ ...input, branchId: input.branchId ?? currentBranchId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stock.all });
       queryClient.invalidateQueries({ queryKey: ["stock-movements"] });

@@ -10,6 +10,7 @@ import type {
 } from "@/types/api";
 
 export interface InventoryBalanceParams {
+  branchId?: string;
   search?: string;
   topCategoryId?: string;
   subCategoryId?: string;
@@ -31,6 +32,7 @@ export async function getInventoryBalance(
 }
 
 export interface SalesReportParams {
+  branchId?: string;
   fromDate?: string;
   toDate?: string;
   topCategoryId?: string;
@@ -51,6 +53,7 @@ export async function getSalesReport(
 }
 
 export interface CashSummaryParams {
+  branchId?: string;
   date?: string;
   fromDate?: string;
   toDate?: string;

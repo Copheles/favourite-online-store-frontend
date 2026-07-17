@@ -8,6 +8,8 @@ export const getCheckoutSchema = (t: (key: string) => string) =>
     paymentType: paymentTypeSchema,
     paidAmount: z.number().min(0, t("pos.validation.minZero")),
     orderDiscount: z.number().min(0, t("pos.validation.minZero")),
+    deliveryFee: z.number().min(0, t("pos.validation.minZero")),
+    orderDate: z.string().min(1, t("pos.validation.dateRequired")),
     notes: optionalString(1000),
   });
 

@@ -10,43 +10,54 @@ import {
 import type { Customer, CustomerInput } from "@/types/api";
 import { STALE_TIME } from "@/lib/queryConfig";
 import { queryKeys } from "@/lib/queryKeys";
+import { useBranch } from "./useBranch";
 
 export function useCustomers(
-  params: ListCustomersParams,
+  params: Omit<ListCustomersParams, "branchId"> = {},
   options?: { enabled?: boolean },
 ) {
+  const { currentBranchId } = useBranch();
+
   return useQuery({
-    queryKey: queryKeys.customers.list(params),
-    queryFn: () => listCustomers(params),
+    queryKey: queryKeys.customers.list({
+      ...params,
+      branchId: currentBranchId,
+    }),
+    queryFn: () =>
+      listCustomers({ ...params, branchId: currentBranchId ?? undefined }),
     staleTime: STALE_TIME.catalog,
     placeholderData: (prev) => prev,
-    enabled: options?.enabled ?? true,
+    enabled: (options?.enabled ?? true) && !!currentBranchId,
   });
 }
 
 export function useCustomer(id: string | undefined) {
+  const { currentBranchId } = useBranch();
+
   return useQuery({
     queryKey: queryKeys.customers.detail(id ?? ""),
-    queryFn: () => getCustomer(id!),
+    queryFn: () => getCustomer(id!, currentBranchId ?? undefined),
     staleTime: STALE_TIME.catalog,
-    enabled: Boolean(id),
+    enabled: Boolean(id) && !!currentBranchId,
   });
 }
 
 export function useCustomerMutations() {
   const queryClient = useQueryClient();
+  const { currentBranchId } = useBranch();
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.customers.all });
 
   const create = useMutation({
-    mutationFn: (input: CustomerInput) => createCustomer(input),
+    mutationFn: (input: CustomerInput) =>
+      createCustomer(input, currentBranchId ?? undefined),
     onSuccess: invalidate,
   });
 
   const update = useMutation({
     mutationFn: ({ id, input }: { id: string; input: Partial<CustomerInput> }) =>
-      updateCustomer(id, input),
+      updateCustomer(id, input, currentBranchId ?? undefined),
     onMutate: async ({ id, input }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.customers.all });
       const snapshots = queryClient.getQueriesData<{
@@ -74,7 +85,8 @@ export function useCustomerMutations() {
   });
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteCustomer(id),
+    mutationFn: (id: string) =>
+      deleteCustomer(id, currentBranchId ?? undefined),
     onSuccess: invalidate,
   });
 

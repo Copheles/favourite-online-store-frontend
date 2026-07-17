@@ -27,8 +27,8 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.orders.all, "detail", id] as const,
     receipt: (id: string) =>
       [...queryKeys.orders.all, "receipt", id] as const,
-    todayCount: (date: string) =>
-      [...queryKeys.orders.all, "today-count", date] as const,
+    futureCount: (branchId: string | null | undefined) =>
+      [...queryKeys.orders.all, "future-count", branchId] as const,
   },
   customers: {
     all: ["customers"] as const,
@@ -65,5 +65,9 @@ export const queryKeys = {
     all: ["expenses"] as const,
     list: (params: ListExpensesParams) =>
       [...queryKeys.expenses.all, "list", params] as const,
+  },
+  settings: {
+    all: ["settings"] as const,
+    store: () => [...queryKeys.settings.all, "store"] as const,
   },
 } as const;

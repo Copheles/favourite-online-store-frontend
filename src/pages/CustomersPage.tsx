@@ -74,6 +74,7 @@ export function CustomersPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   const query = useCustomers({
     search: appliedSearch || undefined,
@@ -94,6 +95,10 @@ export function CustomersPage() {
   function openEdit(customer: Customer) {
     setEditingCustomer(customer);
     setFormOpen(true);
+  }
+
+  function requestDelete(customer: Customer) {
+    setCustomerToDelete(customer);
   }
 
   return (
@@ -170,7 +175,7 @@ export function CustomersPage() {
               key={row.id}
               customer={row}
               onEdit={() => openEdit(row)}
-              onDelete={() => remove.mutate(row.id)}
+              onDelete={() => requestDelete(row)}
             />
           ))}
         </div>
@@ -186,6 +191,10 @@ export function CustomersPage() {
                 fields={[
                   { label: t("pos.members.phone"), value: row.phone ?? null },
                   { label: t("pos.members.address"), value: row.address ?? null },
+                  {
+                    label: t("pos.members.points"),
+                    value: String(row.pointsBalance ?? 0),
+                  },
                 ]}
                 actions={
                   <>
@@ -196,7 +205,7 @@ export function CustomersPage() {
                       size="sm"
                       variant="ghost"
                       className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => remove.mutate(row.id)}
+                      onClick={() => requestDelete(row)}
                     >
                       {t("pos.common.delete")}
                     </Button>
@@ -213,6 +222,7 @@ export function CustomersPage() {
                   <PosTableHeaderCell>{t("pos.members.name")}</PosTableHeaderCell>
                   <PosTableHeaderCell>{t("pos.members.phone")}</PosTableHeaderCell>
                   <PosTableHeaderCell>{t("pos.members.address")}</PosTableHeaderCell>
+                  <PosTableHeaderCell>{t("pos.members.points")}</PosTableHeaderCell>
                   <PosTableHeaderCell />
                 </tr>
               </PosTableHead>
@@ -222,6 +232,9 @@ export function CustomersPage() {
                     <PosTableCell className="font-medium">{row.name}</PosTableCell>
                     <PosTableCell>{row.phone ?? "-"}</PosTableCell>
                     <PosTableCell>{row.address ?? "-"}</PosTableCell>
+                    <PosTableCell className="tabular-nums">
+                      {row.pointsBalance ?? 0}
+                    </PosTableCell>
                     <PosTableCell>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => openEdit(row)}>
@@ -231,7 +244,7 @@ export function CustomersPage() {
                           size="sm"
                           variant="ghost"
                           className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => remove.mutate(row.id)}
+                          onClick={() => requestDelete(row)}
                         >
                           {t("pos.common.delete")}
                         </Button>
@@ -254,6 +267,19 @@ export function CustomersPage() {
         onPageChange={setPage}
         onPageSizeChange={setLimit}
       />
+
+      {customerToDelete && (
+        <CustomerDeleteConfirmModal
+          customer={customerToDelete}
+          isPending={remove.isPending}
+          onClose={() => setCustomerToDelete(null)}
+          onConfirm={() => {
+            remove.mutate(customerToDelete.id, {
+              onSuccess: () => setCustomerToDelete(null),
+            });
+          }}
+        />
+      )}
 
       {formOpen && (
         <CustomerFormModal
@@ -382,6 +408,43 @@ function CustomerCard({
         </button>
       </div>
     </div>
+  );
+}
+
+function CustomerDeleteConfirmModal({
+  customer,
+  isPending,
+  onClose,
+  onConfirm,
+}: {
+  customer: Customer;
+  isPending: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <PosModal
+      title={t("pos.members.deleteTitle")}
+      description={t("pos.members.deleteConfirm", { name: customer.name })}
+      onClose={onClose}
+      closeLabel={t("pos.common.close")}
+    >
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
+          {t("pos.common.cancel")}
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={onConfirm}
+          disabled={isPending}
+        >
+          {t("pos.common.delete")}
+        </Button>
+      </div>
+    </PosModal>
   );
 }
 

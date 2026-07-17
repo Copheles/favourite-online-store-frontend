@@ -33,6 +33,7 @@ import { PosToaster, usePosToast } from "@/components/shared/pos/PosToast";
 import { PosToolbar } from "@/components/shared/pos/PosToolbar";
 import { TableSkeleton } from "@/components/shared/pos/TableSkeleton";
 import { useAppliedSearch } from "@/hooks/useAppliedSearch";
+import { useBranch } from "@/hooks/useBranch";
 import { useUrlEnumParam, useUrlLimit, useUrlPage } from "@/hooks/useUrlQuery";
 import { useProducts } from "@/hooks/useAdmin";
 import { formatMoney } from "@/lib/format";
@@ -49,6 +50,7 @@ import { cn } from "@/lib/utils";
 export function ProductsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { canRestock, canWriteCatalog } = useBranch();
   const { toasts, showToast, dismiss } = usePosToast();
   const {
     searchInput,
@@ -119,20 +121,25 @@ export function ProductsPage() {
   }
 
   function renderRowActions(row: Product) {
+    if (!canRestock && !canWriteCatalog) return null;
     return (
       <>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setRestockProduct(row)}
-        >
-          <PackagePlus className="size-3.5" />
-          {t("pos.stock.restock")}
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => openEdit(row)}>
-          <Pencil className="size-3.5" />
-          {t("pos.common.edit")}
-        </Button>
+        {canRestock && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setRestockProduct(row)}
+          >
+            <PackagePlus className="size-3.5" />
+            {t("pos.stock.restock")}
+          </Button>
+        )}
+        {canWriteCatalog && (
+          <Button size="sm" variant="outline" onClick={() => openEdit(row)}>
+            <Pencil className="size-3.5" />
+            {t("pos.common.edit")}
+          </Button>
+        )}
       </>
     );
   }
@@ -144,10 +151,12 @@ export function ProductsPage() {
           title={t("pos.modules.products")}
           description={t("pos.products.description")}
           action={
-            <Button onClick={() => navigate("/products/create")}>
-              <Plus className="size-4" />
-              {t("pos.settings.addProduct")}
-            </Button>
+            canWriteCatalog ? (
+              <Button onClick={() => navigate("/products/create")}>
+                <Plus className="size-4" />
+                {t("pos.settings.addProduct")}
+              </Button>
+            ) : undefined
           }
         />
 
@@ -274,7 +283,7 @@ export function ProductsPage() {
         </div>
       </PosPageShell>
 
-      {editingProduct && (
+      {canWriteCatalog && editingProduct && (
         <PosModal
           wide
           title={t("pos.products.editTitle")}
@@ -290,7 +299,7 @@ export function ProductsPage() {
         </PosModal>
       )}
 
-      {restockProduct && (
+      {canRestock && restockProduct && (
         <RestockModal
           initialProduct={{
             productId: restockProduct.id,

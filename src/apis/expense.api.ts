@@ -8,6 +8,7 @@ import type {
 } from "@/types/api";
 
 export interface ListExpensesParams {
+  branchId?: string;
   search?: string;
   fromDate?: string;
   toDate?: string;

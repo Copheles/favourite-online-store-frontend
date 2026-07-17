@@ -10,12 +10,14 @@ import type {
 } from "@/types/api";
 
 export interface ListOrdersParams {
+  branchId?: string;
   search?: string;
   fromDate?: string;
   toDate?: string;
   paymentType?: PaymentType;
   status?: OrderStatus;
   customerId?: string;
+  futureOnly?: boolean;
   page?: number;
   limit?: number;
 }

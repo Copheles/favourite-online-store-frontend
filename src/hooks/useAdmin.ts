@@ -28,12 +28,16 @@ import type {
 import { STALE_TIME } from "@/lib/queryConfig";
 import { queryKeys } from "@/lib/queryKeys";
 import type { ProductFormValues } from "@/validation/settings.validation";
+import { useBranch } from "./useBranch";
 
-export function useProducts(params: ListProductsParams) {
+export function useProducts(params: Omit<ListProductsParams, "branchId"> = {}) {
+  const { currentBranchId } = useBranch();
+  
   return useQuery({
-    queryKey: queryKeys.products.list(params),
-    queryFn: () => listProducts(params),
+    queryKey: queryKeys.products.list({ ...params, branchId: currentBranchId }),
+    queryFn: () => listProducts({ ...params, branchId: currentBranchId }),
     staleTime: STALE_TIME.catalog,
+    enabled: !!currentBranchId,
   });
 }
 
@@ -70,11 +74,14 @@ export function useCategories(type?: "TOP" | "SUB") {
   });
 }
 
-export function useExpenses(params: ListExpensesParams) {
+export function useExpenses(params: Omit<ListExpensesParams, "branchId"> = {}) {
+  const { currentBranchId } = useBranch();
+  
   return useQuery({
-    queryKey: queryKeys.expenses.list(params),
-    queryFn: () => listExpenses(params),
+    queryKey: queryKeys.expenses.list({ ...params, branchId: currentBranchId }),
+    queryFn: () => listExpenses({ ...params, branchId: currentBranchId }),
     staleTime: STALE_TIME.transactional,
+    enabled: !!currentBranchId,
   });
 }
 

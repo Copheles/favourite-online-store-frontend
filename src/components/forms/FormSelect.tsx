@@ -24,6 +24,7 @@ interface FormSelectProps<T extends FieldValues> {
   labelClassName?: string;
   controlClassName?: string;
   size?: SelectSize;
+  disabled?: boolean;
 }
 
 export function FormSelect<T extends FieldValues>({
@@ -36,6 +37,7 @@ export function FormSelect<T extends FieldValues>({
   labelClassName,
   controlClassName,
   size,
+  disabled,
 }: FormSelectProps<T>) {
   return (
     <FormField
@@ -52,7 +54,12 @@ export function FormSelect<T extends FieldValues>({
             {label}
           </FormLabel>
           <FormControl>
-            <Select {...field} size={size} className={controlClassName}>
+            <Select
+              {...field}
+              size={size}
+              className={controlClassName}
+              disabled={disabled}
+            >
               {placeholder && <option value="">{placeholder}</option>}
               {options.map((option) => (
                 <option key={option.value} value={option.value}>

@@ -1,24 +1,25 @@
 export function toMoney(value: unknown): number {
+  let amount = 0;
+
   if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === "string") {
+    amount = value;
+  } else if (typeof value === "string") {
     const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (
+    amount = Number.isFinite(parsed) ? parsed : 0;
+  } else if (
     value &&
     typeof value === "object" &&
     "toNumber" in value &&
     typeof (value as { toNumber: () => number }).toNumber === "function"
   ) {
-    return (value as { toNumber: () => number }).toNumber();
+    amount = (value as { toNumber: () => number }).toNumber();
+  } else {
+    const parsed = Number(value);
+    amount = Number.isFinite(parsed) ? parsed : 0;
   }
 
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
+  // POS displays and accepts whole currency units only (see formatMoney).
+  return Math.round(amount);
 }
 
 export function formatMoney(value: unknown): string {

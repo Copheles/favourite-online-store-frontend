@@ -1,15 +1,21 @@
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ProductCreateForm } from "@/components/forms/ProductCreateForm";
 import { PageHeader } from "@/components/shared/PageStates";
 import { PosPageShell } from "@/components/shared/pos/PosPageShell";
 import { PosToaster, usePosToast } from "@/components/shared/pos/PosToast";
+import { useBranch } from "@/hooks/useBranch";
 
 export function ProductCreatePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { canWriteCatalog } = useBranch();
   const { toasts, showToast, dismiss } = usePosToast();
+
+  if (!canWriteCatalog) {
+    return <Navigate to="/products" replace />;
+  }
 
   return (
     <>

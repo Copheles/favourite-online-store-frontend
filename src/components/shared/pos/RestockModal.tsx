@@ -13,10 +13,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ApiErrorAlert } from "@/components/forms/ApiErrorAlert";
+import { FormSelect } from "@/components/forms/FormSelect";
 import { FormTextField } from "@/components/forms/FormTextField";
 import { FormTextareaField } from "@/components/forms/FormTextareaField";
 import { PosModal } from "@/components/shared/pos/PosModal";
 import { ProductCombobox } from "@/components/shared/pos/ProductCombobox";
+import { useBranch } from "@/hooks/useBranch";
 import { useStockMovementMutation } from "@/hooks/useStock";
 import { todayISO } from "@/lib/format";
 import {
@@ -43,8 +45,22 @@ export function RestockModal({
 }: RestockModalProps) {
   const { t } = useTranslation();
   const mutation = useStockMovementMutation();
+  const { accessibleBranches, defaultBranchId } = useBranch();
   const [selectedLabel, setSelectedLabel] = useState(
     initialProduct ? `${initialProduct.name} (${initialProduct.code})` : "",
+  );
+
+  const branchOptions = useMemo(
+    () =>
+      accessibleBranches.map((branch) => {
+        const base = `${branch.name} (${branch.code})`;
+        const isHome = branch.id === defaultBranchId;
+        return {
+          value: branch.id,
+          label: isHome ? `${base} · ${t("pos.stock.saleHome")}` : base,
+        };
+      }),
+    [accessibleBranches, defaultBranchId, t],
   );
 
   const schema = useMemo(() => getStockMovementSchema(t), [t]);
@@ -52,6 +68,7 @@ export function RestockModal({
     resolver: zodResolver(schema),
     defaultValues: {
       productId: initialProduct?.productId ?? "",
+      branchId: defaultBranchId ?? accessibleBranches[0]?.id ?? "",
       type: "IN",
       quantity: 1,
       buyPrice: null,
@@ -64,6 +81,7 @@ export function RestockModal({
     mutation.mutate(
       {
         productId: values.productId,
+        branchId: values.branchId,
         type: "IN",
         quantity: values.quantity,
         buyPrice: values.buyPrice ?? null,
@@ -91,6 +109,15 @@ export function RestockModal({
           onSubmit={form.handleSubmit(onSubmit)}
           className="mt-4 grid gap-4 sm:grid-cols-2"
         >
+          <div className="sm:col-span-2">
+            <FormSelect
+              control={form.control}
+              name="branchId"
+              label={t("pos.stock.branch")}
+              options={branchOptions}
+              disabled={branchOptions.length <= 1}
+            />
+          </div>
           <FormField
             control={form.control}
             name="productId"

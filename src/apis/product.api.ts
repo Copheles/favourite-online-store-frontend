@@ -10,6 +10,7 @@ import type {
 } from "@/types/api";
 
 export interface ListProductsParams {
+  branchId?: string;
   search?: string;
   topCategoryId?: string;
   subCategoryId?: string;
@@ -21,6 +22,7 @@ export interface ListProductsParams {
 }
 
 export interface ExportProductsExcelParams {
+  branchId?: string;
   search?: string;
   topCategoryId?: string;
   subCategoryId?: string;

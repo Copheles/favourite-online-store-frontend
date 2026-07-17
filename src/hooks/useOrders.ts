@@ -9,16 +9,18 @@ import {
 import type { OrderStatus } from "@/types/api";
 import { STALE_TIME } from "@/lib/queryConfig";
 import { queryKeys } from "@/lib/queryKeys";
-import { todayISO } from "@/lib/format";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranch } from "@/hooks/useBranch";
 
-export function useOrders(params: ListOrdersParams) {
+export function useOrders(params: Omit<ListOrdersParams, "branchId"> = {}) {
   const { isAuthenticated } = useAuth();
+  const { currentBranchId } = useBranch();
+  
   return useQuery({
-    queryKey: queryKeys.orders.list(params),
-    queryFn: () => listOrders(params),
+    queryKey: queryKeys.orders.list({ ...params, branchId: currentBranchId }),
+    queryFn: () => listOrders({ ...params, branchId: currentBranchId }),
     staleTime: STALE_TIME.transactional,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !!currentBranchId,
     placeholderData: (prev) => prev,
   });
 }
@@ -62,34 +64,44 @@ export function useUpdateOrderStatus() {
   });
 }
 
-export function useTodayOrderCount() {
+export function useCurrentOrderCount() {
   const { isAuthenticated } = useAuth();
-  const today = todayISO();
+  const { currentBranchId } = useBranch();
   return useQuery({
-    queryKey: queryKeys.orders.todayCount(today),
+    queryKey: queryKeys.orders.futureCount(currentBranchId),
     queryFn: () =>
-      listOrders({ fromDate: today, toDate: today, page: 1, limit: 1 }),
+      listOrders({
+        branchId: currentBranchId,
+        futureOnly: true,
+        page: 1,
+        limit: 1,
+      }),
     select: (data) => data.meta.total,
     staleTime: STALE_TIME.transactional,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !!currentBranchId,
   });
 }
 
-export function usePrefetchTodayOrders() {
+export function usePrefetchCurrentOrders() {
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
-  const today = todayISO();
+  const { currentBranchId } = useBranch();
   return () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !currentBranchId) return;
     queryClient.prefetchQuery({
       queryKey: queryKeys.orders.list({
-        fromDate: today,
-        toDate: today,
+        branchId: currentBranchId,
+        futureOnly: true,
         page: 1,
         limit: 20,
       }),
       queryFn: () =>
-        listOrders({ fromDate: today, toDate: today, page: 1, limit: 20 }),
+        listOrders({
+          branchId: currentBranchId,
+          futureOnly: true,
+          page: 1,
+          limit: 20,
+        }),
       staleTime: STALE_TIME.transactional,
     });
   };

@@ -41,7 +41,7 @@ import {
   useOrders,
   useUpdateOrderStatus,
 } from "@/hooks/useOrders";
-import { formatDateTime, formatMoney, toMoney, todayISO } from "@/lib/format";
+import { formatDate, formatMoney, toMoney } from "@/lib/format";
 import {
   ORDER_STATUS_FILTERS,
   PAYMENT_FILTERS,
@@ -75,9 +75,9 @@ export function OrdersPage() {
   const isHistory = location.pathname.includes("/completed");
   const isPending = location.pathname.includes("/pending");
   const mode = isPending ? "pending" : isHistory ? "history" : "current";
-  const useToday = mode === "current";
-  const defaultFrom = useToday ? todayISO() : "";
-  const defaultTo = useToday ? todayISO() : "";
+  const isCurrent = mode === "current";
+  const defaultFrom = "";
+  const defaultTo = "";
   const [searchParams, setSearchParams] = useSearchParams();
   const { toasts, showToast, dismiss } = usePosToast();
   const updateStatus = useUpdateOrderStatus();
@@ -106,8 +106,8 @@ export function OrdersPage() {
   const prevModeRef = useRef(mode);
 
   const appliedSearch = readUrlString(searchParams, "q");
-  const fromDate = readUrlString(searchParams, "from", defaultFrom);
-  const toDate = readUrlString(searchParams, "to", defaultTo);
+  const fromDate = isCurrent ? "" : readUrlString(searchParams, "from", defaultFrom);
+  const toDate = isCurrent ? "" : readUrlString(searchParams, "to", defaultTo);
 
   const filterSchema = useMemo(() => getDateRangeFilterSchema(), []);
   const filterForm = useForm<DateRangeFilterValues>({
@@ -132,22 +132,16 @@ export function OrdersPage() {
     prevModeRef.current = mode;
 
     setSearchParams(
-      () => {
-        const next = new URLSearchParams();
-        if (useToday) {
-          writeUrlString(next, "from", todayISO(), "");
-          writeUrlString(next, "to", todayISO(), "");
-        }
-        return next;
-      },
+      () => new URLSearchParams(),
       { replace: true },
     );
-  }, [mode, useToday, setSearchParams]);
+  }, [mode, setSearchParams]);
 
   const ordersQuery = useOrders({
     search: appliedSearch || undefined,
-    fromDate: fromDate || undefined,
-    toDate: toDate || undefined,
+    fromDate: isCurrent ? undefined : fromDate || undefined,
+    toDate: isCurrent ? undefined : toDate || undefined,
+    futureOnly: isCurrent ? true : undefined,
     paymentType: paymentFilterToApi(paymentFilter),
     status: statusParam,
     page,
@@ -167,7 +161,7 @@ export function OrdersPage() {
     ? t("pos.orders.pendingDescription")
     : isHistory
       ? t("pos.orders.historyDescription")
-      : t("pos.orders.todayDescription");
+      : t("pos.orders.futureDescription");
 
   const rows = ordersQuery.data?.items ?? [];
   const totalPages = ordersQuery.data?.meta.totalPages ?? 1;
@@ -285,7 +279,7 @@ export function OrdersPage() {
 
       <PosToolbar>
         <Form {...filterForm}>
-          <PosToolbarGroup>
+          <PosToolbarGroup className={isCurrent ? "lg:grid-cols-2" : undefined}>
             <PosSearchBar
               value={filterForm.watch("search") ?? ""}
               onChange={(value) => filterForm.setValue("search", value)}
@@ -294,42 +288,46 @@ export function OrdersPage() {
               placeholder={t("pos.orders.searchPlaceholder")}
               className="w-full min-w-0 lg:col-span-2"
             />
-            <FormField
-              control={filterForm.control}
-              name="fromDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      {...field}
-                      onChange={(event) => {
-                        field.onChange(event);
-                        updateDateParam("from", event.target.value);
-                      }}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={filterForm.control}
-              name="toDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      {...field}
-                      onChange={(event) => {
-                        field.onChange(event);
-                        updateDateParam("to", event.target.value);
-                      }}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+            {!isCurrent && (
+              <>
+                <FormField
+                  control={filterForm.control}
+                  name="fromDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          onChange={(event) => {
+                            field.onChange(event);
+                            updateDateParam("from", event.target.value);
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={filterForm.control}
+                  name="toDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          onChange={(event) => {
+                            field.onChange(event);
+                            updateDateParam("to", event.target.value);
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
           </PosToolbarGroup>
         </Form>
         <PosToolbarActions>
@@ -340,7 +338,7 @@ export function OrdersPage() {
       </PosToolbar>
 
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        {mode === "current" && (
+        {isCurrent && (
           <PosFilterSelect
             value={statusFilter}
             options={ORDER_STATUS_FILTERS}
@@ -377,7 +375,7 @@ export function OrdersPage() {
             {rows.map((row: OrderListItem) => (
               <PosRecordCard
                 key={row.id}
-                title={row.invoiceNumber}
+                title={`#${row.dailySerial} · ${row.invoiceNumber}`}
                 subtitle={row.customerName}
                 trailing={
                   <>
@@ -388,10 +386,14 @@ export function OrdersPage() {
                   </>
                 }
                 fields={[
+                  {
+                    label: t("pos.orders.dailySerial"),
+                    value: `#${row.dailySerial}`,
+                  },
                   { label: t("pos.orders.payment"), value: row.paymentType ?? "-" },
                   {
                     label: t("pos.orders.date"),
-                    value: formatDateTime(row.createdAt),
+                    value: formatDate(row.orderDate ?? row.createdAt),
                   },
                   {
                     label: t("pos.sale.orderNotes"),
@@ -407,6 +409,7 @@ export function OrdersPage() {
             <PosTable>
               <PosTableHead>
                 <tr>
+                  <PosTableHeaderCell>{t("pos.orders.dailySerial")}</PosTableHeaderCell>
                   <PosTableHeaderCell>{t("pos.orders.invoice")}</PosTableHeaderCell>
                   <PosTableHeaderCell>{t("pos.orders.customer")}</PosTableHeaderCell>
                   <PosTableHeaderCell>{t("pos.orders.total")}</PosTableHeaderCell>
@@ -420,6 +423,9 @@ export function OrdersPage() {
               <PosTableBody>
                 {rows.map((row: OrderListItem) => (
                   <PosTableRow key={row.id}>
+                    <PosTableCell className="font-semibold tabular-nums">
+                      #{row.dailySerial}
+                    </PosTableCell>
                     <PosTableCell className="font-medium">
                       {row.invoiceNumber}
                     </PosTableCell>
@@ -441,7 +447,7 @@ export function OrdersPage() {
                         <span className="text-muted-foreground/40">—</span>
                       )}
                     </PosTableCell>
-                    <PosTableCell>{formatDateTime(row.createdAt)}</PosTableCell>
+                    <PosTableCell>{formatDate(row.orderDate ?? row.createdAt)}</PosTableCell>
                     <PosTableCell>
                       <div className="flex flex-wrap gap-2">
                         {renderRowActions(row)}
@@ -467,8 +473,12 @@ export function OrdersPage() {
 
       {selectedId && !showReceipt && detailQuery.data && (
         <PosModal
-          title={detailQuery.data.invoiceNumber}
-          description={formatDateTime(getOrderDate(detailQuery.data))}
+          title={
+            detailQuery.data.dailySerial
+              ? `#${detailQuery.data.dailySerial} · ${detailQuery.data.invoiceNumber}`
+              : detailQuery.data.invoiceNumber
+          }
+          description={formatDate(getOrderDate(detailQuery.data))}
           onClose={() => setSelectedId(null)}
           closeLabel={t("pos.common.close")}
           wide
@@ -624,6 +634,10 @@ function OrderDetailView({ order }: { order: OrderDetail }) {
 
       <div className="grid grid-cols-2 gap-2">
         <InfoTile
+          label={t("pos.orders.dailySerial")}
+          value={order.dailySerial != null ? `#${order.dailySerial}` : "-"}
+        />
+        <InfoTile
           label={t("pos.orders.customer")}
           value={order.customer?.name ?? t("pos.sale.walkIn")}
         />
@@ -639,7 +653,7 @@ function OrderDetailView({ order }: { order: OrderDetail }) {
         )}
         <InfoTile
           label={t("pos.orders.date")}
-          value={formatDateTime(getOrderDate(order))}
+          value={formatDate(getOrderDate(order))}
         />
       </div>
 
@@ -751,6 +765,12 @@ function ReceiptView({ receipt }: { receipt: OrderReceipt }) {
 
       <div className="space-y-1 text-xs">
         <div className="flex justify-between gap-3">
+          <span className="text-muted-foreground">{t("pos.orders.dailySerial")}</span>
+          <span className="font-medium text-foreground">
+            #{receipt.dailySerial ?? "-"}
+          </span>
+        </div>
+        <div className="flex justify-between gap-3">
           <span className="text-muted-foreground">{t("pos.orders.invoice")}</span>
           <span className="font-medium text-foreground">
             {receipt.invoiceNumber}
@@ -759,7 +779,7 @@ function ReceiptView({ receipt }: { receipt: OrderReceipt }) {
         <div className="flex justify-between gap-3">
           <span className="text-muted-foreground">{t("pos.orders.date")}</span>
           <span className="font-medium text-foreground">
-            {formatDateTime(receipt.date)}
+            {formatDate(receipt.date)}
           </span>
         </div>
         <div className="flex justify-between gap-3">

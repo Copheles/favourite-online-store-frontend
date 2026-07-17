@@ -12,6 +12,7 @@ export const PAGE_SIZE = {
   members: 24,
   stock: 50,
   products: 20,
+  expenses: 20,
 } as const;
 
 export const PAGE_SIZE_OPTIONS = {
@@ -21,4 +22,5 @@ export const PAGE_SIZE_OPTIONS = {
   orders: [10, 20, 50] as const,
   reports: [10, 20, 50] as const,
   saleProducts: [40, 80, 120] as const,
+  expenses: [10, 20, 50] as const,
 } as const;

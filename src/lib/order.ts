@@ -46,7 +46,8 @@ export function getOrderCashierName(
 
 export function getOrderDate(order: {
   date?: string;
+  orderDate?: string;
   createdAt?: string;
 }): string {
-  return order.date ?? order.createdAt ?? "";
+  return order.orderDate ?? order.date ?? order.createdAt ?? "";
 }

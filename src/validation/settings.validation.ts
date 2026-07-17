@@ -80,6 +80,18 @@ export const getStaffSchema = (t: (key: string) => string) =>
 
 export type StaffFormValues = z.infer<ReturnType<typeof getStaffSchema>>;
 
+export const getPointsSettingsSchema = (t: (key: string) => string) =>
+  z.object({
+    pointsCashbackPercent: z
+      .number()
+      .min(0, t("pos.validation.minZero"))
+      .max(100, t("pos.validation.max100")),
+  });
+
+export type PointsSettingsFormValues = z.infer<
+  ReturnType<typeof getPointsSettingsSchema>
+>;
+
 export const productFormDefaults: ProductFormValues = {
   name: "",
   code: "",

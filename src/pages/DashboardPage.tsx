@@ -3,21 +3,21 @@ import { useTranslation } from "react-i18next";
 import { posModules } from "@/constants/posModules";
 import { ModuleTile } from "@/components/dashboard/ModuleTile";
 import { useAuth } from "@/hooks/useAuth";
-import { usePrefetchTodayOrders, useTodayOrderCount } from "@/hooks/useOrders";
+import { usePrefetchCurrentOrders, useCurrentOrderCount } from "@/hooks/useOrders";
 
 export function DashboardPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const todayCountQuery = useTodayOrderCount();
-  const prefetchTodayOrders = usePrefetchTodayOrders();
+  const currentOrderCountQuery = useCurrentOrderCount();
+  const prefetchCurrentOrders = usePrefetchCurrentOrders();
 
   useEffect(() => {
-    prefetchTodayOrders();
-  }, [prefetchTodayOrders]);
+    prefetchCurrentOrders();
+  }, [prefetchCurrentOrders]);
 
   const modules = posModules.map((module) =>
-    module.id === "currentOrder" && todayCountQuery.data
-      ? { ...module, badge: todayCountQuery.data }
+    module.id === "currentOrder" && currentOrderCountQuery.data
+      ? { ...module, badge: currentOrderCountQuery.data }
       : module,
   );
 

@@ -7,21 +7,28 @@ import {
 } from "@/apis/report.api";
 import { STALE_TIME } from "@/lib/queryConfig";
 import { queryKeys } from "@/lib/queryKeys";
+import { useBranch } from "./useBranch";
 
-export function useSalesReport(params: SalesReportParams) {
+export function useSalesReport(params: Omit<SalesReportParams, "branchId"> = {}) {
+  const { currentBranchId } = useBranch();
+  
   return useQuery({
-    queryKey: queryKeys.reports.sales(params),
-    queryFn: () => getSalesReport(params),
+    queryKey: queryKeys.reports.sales({ ...params, branchId: currentBranchId }),
+    queryFn: () => getSalesReport({ ...params, branchId: currentBranchId }),
     staleTime: STALE_TIME.reports,
     placeholderData: (prev) => prev,
+    enabled: !!currentBranchId,
   });
 }
 
-export function useCashSummary(params: CashSummaryParams) {
+export function useCashSummary(params: Omit<CashSummaryParams, "branchId"> = {}) {
+  const { currentBranchId } = useBranch();
+  
   return useQuery({
-    queryKey: queryKeys.reports.cashSummary(params),
-    queryFn: () => getCashSummary(params),
+    queryKey: queryKeys.reports.cashSummary({ ...params, branchId: currentBranchId }),
+    queryFn: () => getCashSummary({ ...params, branchId: currentBranchId }),
     staleTime: STALE_TIME.reports,
     placeholderData: (prev) => prev,
+    enabled: !!currentBranchId,
   });
 }

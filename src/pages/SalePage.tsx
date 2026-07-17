@@ -39,6 +39,7 @@ import { PosFilterTabs } from "@/components/shared/pos/PosFilterTabs";
 import { PosSearchBar } from "@/components/shared/pos/PosSearchBar";
 import { PosToaster, usePosToast } from "@/components/shared/pos/PosToast";
 import { useAppliedSearch } from "@/hooks/useAppliedSearch";
+import { useBranch } from "@/hooks/useBranch";
 import { useSaleCartResize } from "@/hooks/useSaleCartResize";
 import { useUrlEnumParam, useUrlLimit, useUrlPage, useUrlStringParam, useUrlQueryUpdater } from "@/hooks/useUrlQuery";
 import { useCategories } from "@/hooks/useAdmin";
@@ -56,7 +57,7 @@ import {
   getUnitPrice,
   type CartLine,
 } from "@/lib/cart";
-import { formatDateTime, formatMoney, toMoney } from "@/lib/format";
+import { formatDateTime, formatMoney, toMoney, todayISO } from "@/lib/format";
 import { getOrderNetTotal } from "@/lib/order";
 import {
   STOCK_STATUS_FILTERS,
@@ -100,6 +101,7 @@ const saleCheckoutTextareaClass =
 
 export function SalePage() {
   const { t } = useTranslation();
+  const { canRestock, currentBranchId } = useBranch();
   const { toasts, showToast, dismiss } = usePosToast();
   const {
     saleLayoutRef,
@@ -259,17 +261,33 @@ export function SalePage() {
       paymentType: "CASH",
       paidAmount: 0,
       orderDiscount: 0,
+      deliveryFee: 0,
+      orderDate: todayISO(),
       notes: "",
     },
   });
 
   const orderDiscount = form.watch("orderDiscount");
+  const deliveryFee = form.watch("deliveryFee");
   const paymentType = form.watch("paymentType");
   const paidAmount = form.watch("paidAmount");
+  const orderDate = form.watch("orderDate");
+  const isFutureOrderDate = Boolean(orderDate && orderDate > todayISO());
+
+  useEffect(() => {
+    if (isFutureOrderDate && form.getValues("status") !== "COMPLETED") {
+      form.setValue("status", "COMPLETED", { shouldValidate: true });
+    }
+  }, [isFutureOrderDate, form]);
 
   const netTotal = useMemo(
-    () => calcNetTotal(cart, Number(orderDiscount) || 0),
-    [cart, orderDiscount],
+    () =>
+      calcNetTotal(
+        cart,
+        Number(orderDiscount) || 0,
+        Number(deliveryFee) || 0,
+      ),
+    [cart, orderDiscount, deliveryFee],
   );
 
   const effectivePaid = paidAmount > 0 ? paidAmount : netTotal;
@@ -277,7 +295,7 @@ export function SalePage() {
 
   useEffect(() => {
     if (paymentType === "CASH" && netTotal > 0) {
-      form.setValue("paidAmount", netTotal, { shouldValidate: true });
+      form.setValue("paidAmount", toMoney(netTotal), { shouldValidate: true });
     }
   }, [netTotal, paymentType, form]);
 
@@ -385,6 +403,8 @@ export function SalePage() {
         paymentType: values.paymentType,
         paidAmount: values.paidAmount || 0,
         orderDiscount: values.orderDiscount || 0,
+        deliveryFee: values.deliveryFee || 0,
+        orderDate: values.orderDate || todayISO(),
         notes: values.notes?.trim() || "",
       },
     };
@@ -400,6 +420,8 @@ export function SalePage() {
       paymentType: "CASH",
       paidAmount: 0,
       orderDiscount: 0,
+      deliveryFee: 0,
+      orderDate: todayISO(),
       notes: "",
     });
     setSelectedCustomerName("");
@@ -431,10 +453,12 @@ export function SalePage() {
       paymentType: draft.checkout.paymentType,
       paidAmount: draft.checkout.paidAmount,
       orderDiscount: draft.checkout.orderDiscount,
+      deliveryFee: draft.checkout.deliveryFee || 0,
+      orderDate: draft.checkout.orderDate || todayISO(),
       notes: draft.checkout.notes,
     });
     if (draft.checkout.customerId) {
-      void getCustomer(draft.checkout.customerId)
+      void getCustomer(draft.checkout.customerId, currentBranchId ?? undefined)
         .then((customer) => setSelectedCustomerName(customer.name))
         .catch(() => setSelectedCustomerName(""));
     } else {
@@ -473,10 +497,12 @@ export function SalePage() {
           unitPrice: toMoney(getUnitPrice(line)) || getLineFinalPrice(line),
           discount: toMoney(getLineDiscount(line)),
         })),
-        status: values.status,
+        status: isFutureOrderDate ? "COMPLETED" : values.status,
         paymentType: values.paymentType,
         paidAmount: paid,
         orderDiscount: values.orderDiscount || 0,
+        deliveryFee: values.deliveryFee || 0,
+        orderDate: values.orderDate || todayISO(),
         notes: values.notes?.trim() || null,
       },
       {
@@ -491,6 +517,8 @@ export function SalePage() {
             paymentType: "CASH",
             paidAmount: 0,
             orderDiscount: 0,
+            deliveryFee: 0,
+            orderDate: todayISO(),
             notes: "",
           });
         },
@@ -775,15 +803,27 @@ export function SalePage() {
                   />
                 </div>
 
-                <FormSelect
-                  control={form.control}
-                  name="status"
-                  label={t("pos.sale.orderStatus")}
-                  options={statusOptions}
-                  size="sm"
-                  labelClassName={saleCheckoutLabelClass}
-                  controlClassName={saleCheckoutControlClass}
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <FormTextField
+                    control={form.control}
+                    name="orderDate"
+                    label={t("pos.sale.orderDate")}
+                    type="date"
+                    min={todayISO()}
+                    labelClassName={saleCheckoutLabelClass}
+                    controlClassName={saleCheckoutControlClass}
+                  />
+                  <FormSelect
+                    control={form.control}
+                    name="status"
+                    label={t("pos.sale.orderStatus")}
+                    options={statusOptions}
+                    size="sm"
+                    disabled={isFutureOrderDate}
+                    labelClassName={saleCheckoutLabelClass}
+                    controlClassName={saleCheckoutControlClass}
+                  />
+                </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <FormTextField
@@ -799,6 +839,18 @@ export function SalePage() {
                     control={form.control}
                     name="orderDiscount"
                     label={t("pos.sale.orderDiscount")}
+                    type="number"
+                    min={0}
+                    labelClassName={saleCheckoutLabelClass}
+                    controlClassName={saleCheckoutControlClass}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <FormTextField
+                    control={form.control}
+                    name="deliveryFee"
+                    label={t("pos.sale.deliveryFee")}
                     type="number"
                     min={0}
                     labelClassName={saleCheckoutLabelClass}
@@ -827,6 +879,11 @@ export function SalePage() {
                     {Number(orderDiscount) > 0 && (
                       <span className="text-muted-foreground">
                         −{formatMoney(Number(orderDiscount) || 0)}
+                      </span>
+                    )}
+                    {Number(deliveryFee) > 0 && (
+                      <span className="text-muted-foreground">
+                        +{formatMoney(Number(deliveryFee) || 0)}
                       </span>
                     )}
                   </div>
@@ -895,16 +952,18 @@ export function SalePage() {
                 placeholder={t("pos.sale.searchProducts")}
                 className="w-full max-w-none flex-1"
               />
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 shrink-0 gap-1.5 px-3"
-                onClick={() => setRestockOpen(true)}
-                title={t("pos.stock.restock")}
-              >
-                <PackagePlus className="size-4 shrink-0" />
-                <span className="hidden sm:inline">{t("pos.stock.restock")}</span>
-              </Button>
+              {canRestock && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 shrink-0 gap-1.5 px-3"
+                  onClick={() => setRestockOpen(true)}
+                  title={t("pos.stock.restock")}
+                >
+                  <PackagePlus className="size-4 shrink-0" />
+                  <span className="hidden sm:inline">{t("pos.stock.restock")}</span>
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
@@ -1082,7 +1141,7 @@ export function SalePage() {
         onDelete={handleDeleteDraft}
       />
     )}
-    {restockOpen && (
+    {canRestock && restockOpen && (
       <RestockModal
         onClose={() => setRestockOpen(false)}
         onSuccess={() => showToast("success", t("pos.stock.restockSuccess"))}
@@ -1256,6 +1315,7 @@ function DraftsModal({
               const total = calcNetTotal(
                 draft.lines,
                 draft.checkout.orderDiscount,
+                draft.checkout.deliveryFee || 0,
               );
               return (
                 <li
@@ -1404,6 +1464,12 @@ function SaleSuccessScreen({
         />
         <div className="rounded-xl border border-border/70 bg-card p-6 shadow-card">
           <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{t("pos.orders.dailySerial")}</span>
+              <span className="font-semibold tabular-nums">
+                #{order.dailySerial ?? "-"}
+              </span>
+            </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("pos.orders.invoice")}</span>
               <span className="font-medium">{order.invoiceNumber}</span>

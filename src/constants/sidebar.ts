@@ -49,16 +49,6 @@ export const sidebarMenuSections: SidebarSection[] = [
         ],
       },
       {
-        labelKey: "sidebar.menu.deliveries",
-        path: "/deliveries",
-        icon: DeliveryTruck01Icon,
-        children: [
-          { labelKey: "sidebar.menu.allDeliveries", path: "/deliveries" },
-          { labelKey: "sidebar.menu.inTransit", path: "/deliveries/in-transit" },
-          { labelKey: "sidebar.menu.delivered", path: "/deliveries/delivered" },
-        ],
-      },
-      {
         labelKey: "sidebar.menu.customers",
         path: "/customers",
         icon: UserGroupIcon,
@@ -67,6 +57,10 @@ export const sidebarMenuSections: SidebarSection[] = [
         labelKey: "sidebar.menu.reports",
         path: "/reports",
         icon: ChartHistogramIcon,
+        children: [
+          { labelKey: "pos.modules.saleReport", path: "/reports/sale" },
+          { labelKey: "pos.modules.summaryReport", path: "/reports/summary" },
+        ],
       },
     ],
   },
@@ -77,7 +71,6 @@ export const sidebarMenuSections: SidebarSection[] = [
         labelKey: "sidebar.menu.settings",
         path: "/settings",
         icon: Settings01Icon,
-        roles: ["admin"],
       },
       {
         labelKey: "sidebar.menu.helpCenter",
