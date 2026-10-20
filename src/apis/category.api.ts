@@ -3,6 +3,7 @@ import { toQueryString } from "@/lib/queryParams";
 import type { Category, CategoryInput, PaginatedResponse } from "@/types/api";
 
 export interface ListCategoriesParams {
+  branchId?: string;
   search?: string;
   type?: "TOP" | "SUB";
   parentId?: string;
@@ -50,26 +51,38 @@ export async function listCategories(
 ): Promise<PaginatedResponse<Category>> {
   const { data } = await axiosClient.get<
     Category[] | PaginatedResponse<Category>
-  >(`/api/categories${toQueryString(params)}`);
+  >(`/api/categories${toQueryString({ branchId: params.branchId })}`);
   return normalizeCategories(data, params);
 }
 
-export async function createCategory(input: CategoryInput): Promise<Category> {
-  const { data } = await axiosClient.post<Category>("/api/categories", input);
+export async function createCategory(
+  input: CategoryInput,
+  branchId?: string,
+): Promise<Category> {
+  const { data } = await axiosClient.post<Category>(
+    `/api/categories${toQueryString({ branchId })}`,
+    input,
+  );
   return data;
 }
 
 export async function updateCategory(
   id: string,
   input: Partial<CategoryInput>,
+  branchId?: string,
 ): Promise<Category> {
   const { data } = await axiosClient.patch<Category>(
-    `/api/categories/${id}`,
+    `/api/categories/${id}${toQueryString({ branchId })}`,
     input,
   );
   return data;
 }
 
-export async function deleteCategory(id: string): Promise<void> {
-  await axiosClient.delete(`/api/categories/${id}`);
+export async function deleteCategory(
+  id: string,
+  branchId?: string,
+): Promise<void> {
+  await axiosClient.delete(
+    `/api/categories/${id}${toQueryString({ branchId })}`,
+  );
 }

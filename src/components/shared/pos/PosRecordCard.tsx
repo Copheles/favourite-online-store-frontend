@@ -25,6 +25,7 @@ export function PosRecordCard({
   fields,
   actions,
   className,
+  onTitleClick,
 }: {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
@@ -33,6 +34,7 @@ export function PosRecordCard({
   fields: PosRecordCardField[];
   actions?: React.ReactNode;
   className?: string;
+  onTitleClick?: () => void;
 }) {
   const visibleFields = fields.filter((field) => field.value != null);
 
@@ -47,9 +49,19 @@ export function PosRecordCard({
         <div className="flex min-w-0 items-start gap-3">
           {leading != null && <div className="shrink-0">{leading}</div>}
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">
-              {title}
-            </p>
+            {onTitleClick ? (
+              <button
+                type="button"
+                onClick={onTitleClick}
+                className="truncate text-left text-sm font-semibold text-foreground underline-offset-2 hover:text-primary hover:underline"
+              >
+                {title}
+              </button>
+            ) : (
+              <p className="truncate text-sm font-semibold text-foreground">
+                {title}
+              </p>
+            )}
             {subtitle != null && (
               <p className="mt-0.5 truncate text-xs text-muted-foreground">
                 {subtitle}

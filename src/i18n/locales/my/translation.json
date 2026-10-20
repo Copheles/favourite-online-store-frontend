@@ -103,7 +103,8 @@
       "expenses": "Expenses",
       "ownerIntegration": "Owner API ချိတ်ဆက်မှု",
       "userManagement": "User Management",
-      "branchManagement": "Branch Management"
+      "branchManagement": "Branch Management",
+      "categories": "အမျိုးအစားများ"
     },
     "userManagement": {
       "title": "User Management",
@@ -236,6 +237,11 @@
       },
       "status": {
         "ALL": "အားလုံး"
+      },
+      "categoryType": {
+        "ALL": "အမျိုးအစားအားလုံး",
+        "TOP": "Top category",
+        "SUB": "Sub category"
       }
     },
     "sale": {
@@ -416,9 +422,20 @@
       "purchaseDate": "ဝယ်ယူသည့်ရက်စွဲ",
       "dateFrom": "စတင်ရက်",
       "dateTo": "ပြီးဆုံးရက်",
-      "movementHistory": "Restock history",
+      "movementHistory": "Stock movement history",
+      "catalogDescription": "ကုန်ပစ္စည်းများ ကြည့်ရှု၊ စတော့ ပြင်ဆင်ပြီး အသေးစိတ်/လှုပ်ရှားမှု မှတ်တမ်း ကြည့်ရန် ဖွင့်ပါ။",
+      "backToCatalog": "စတော့ စာရင်းသို့ ပြန်သွားရန်",
+      "noProductMovements": "ဤကုန်ပစ္စည်းအတွက် စတော့ လှုပ်ရှားမှု မရှိသေးပါ။",
+      "entryDescription": "ရွေးထားသော ဌာနခွဲအတွက် စတော့ ဝင် (restock) သို့မဟုတ် စတော့ ထွက် မှတ်တမ်းတင်ပါ။",
+      "recordOut": "စတော့ ထွက် မှတ်တမ်းတင်ရန်",
+      "movementTypes": {
+        "IN": "စတော့ ဝင်",
+        "OUT": "စတော့ ထွက်",
+        "OUT_RETURN": "ရောင်းချ ပြန်အမ်း",
+        "REPACK": "Repack"
+      },
       "historyDescription": "Manual stock entries added through restock.",
-      "viewingBranch": "Showing restock history for {{branch}}.",
+      "viewingBranch": "ဌာနခွဲ: {{branch}}.",
       "noMovements": "No restock records found for this branch.",
       "noMovementsFiltered": "No restock records match your search or date filters. Try Reset.",
       "searchProduct": "အမည် သို့မဟုတ် ကုဒ်ဖြင့် ရှာပါ...",
@@ -437,6 +454,10 @@
       "deactivated": "Product deactivated.",
       "deactivate": "Deactivate",
       "deactivateConfirm": "Deactivate this product? It will no longer appear in sales.",
+      "deleteTitle": "ကုန်ပစ္စည်း ဖျက်ရန်",
+      "deleteConfirm": "\"{{name}}\" ကို အပြီးအပိုင် ဖျက်မလား? ပြန်မရနိုင်ပါ။",
+      "deleted": "{{name}} ကို ဖျက်ပြီးပါပြီ။",
+      "deleteBlockedHint": "ဤကုန်ပစ္စည်းတွင် အော်ဒါ သို့မဟုတ် စတော့ မှတ်တမ်း ရှိသောကြောင့် ဖျက်၍ မရပါ။ ရောင်းချမှ မပြရန် ပိတ်ထားပါ။",
       "stockReadOnlyHint": "To change stock quantity, use",
       "unit": "Unit",
       "descriptionField": "Description",
@@ -453,7 +474,7 @@
       "export": "Export Excel",
       "checking": "Checking file...",
       "exporting": "Exporting...",
-      "hint": "Super admin သာ သုံးနိုင်သည်။ TARA .xlsx ဖိုင်ကို dry-run စစ်ပြီး apply လုပ်ပါ။ အနodus Qty က default branch (Branch A) မှာ သိမ်းမည်။ POS က 0 အောက်မှာ မရောင်းပါ။",
+      "hint": "Admin/Owner သာ သုံးနိုင်သည်။ Import/Export သည် လက်ရှိရွေးထားသော branch catalog သို့သာ သက်ရောက်သည်။ TARA .xlsx ကို dry-run စစ်ပြီး apply လုပ်ပါ။ POS က 0 အောက်မှာ မရောင်းပါ။",
       "checked": "Excel file checked — review the summary, then apply import.",
       "completed": "Excel import completed.",
       "validationFailed": "Fix the errors below before importing.",
@@ -475,7 +496,8 @@
         "negativeQty": "Negative qty rows",
         "buyPriceResolved": "Buy price resolved",
         "skipped": "Skipped"
-      }
+      },
+      "branchScope": "ရွေးထားသော branch: {{branch}}"
     },
     "expenses": {
       "description": "Record shop expenses for daily closing reports.",
@@ -837,7 +859,29 @@
       "dateRequired": "Date is required",
       "max64": "Must be 64 characters or less",
       "max128": "Must be 128 characters or less",
-      "invalidValue": "Invalid value"
+      "invalidValue": "Invalid value",
+      "parentCategoryRequired": "Parent category လိုအပ်သည်"
+    },
+    "categories": {
+      "title": "အမျိုးအစားများ",
+      "description": "ရွေးထားသော branch အတွက် top/sub category များကို စီမံရန်။",
+      "branchScope": "ရွေးထားသော branch: {{branch}}",
+      "add": "Category ထည့်ရန်",
+      "addTitle": "Category ထည့်ရန်",
+      "editTitle": "Category ပြင်ရန်",
+      "searchPlaceholder": "Category ရှာရန်...",
+      "empty": "Category မတွေ့ပါ။",
+      "name": "အမည်",
+      "type": "အမျိုးအစား",
+      "typeTop": "Top category",
+      "typeSub": "Sub category",
+      "parent": "Parent category",
+      "noParent": "—",
+      "selectParent": "Parent category ရွေးရန်",
+      "filterByType": "အမျိုးအစားဖြင့် စစ်ရန်",
+      "formHint": "Top category များသည် ကုန်ပစ္စည်းများကို စုစည်းသည်။ Sub category သည် ဤ branch ရှိ top category တစ်ခုအောက်တွင်ရှိရမည်။",
+      "deleteTitle": "Category ဖျက်ရန်",
+      "deleteConfirm": "\"{{name}}\" ကို ဖျက်မလား။ ကုန်ပစ္စည်း သို့မဟုတ် subcategory သုံးထားသော category များကို ဖျက်၍မရပါ။"
     }
   }
 }

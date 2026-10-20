@@ -8,6 +8,7 @@ import {
   useProductExcelExport,
   useProductExcelImport,
 } from "@/hooks/useStock";
+import { useBranch } from "@/hooks/useBranch";
 import { cn } from "@/lib/utils";
 
 interface ProductExcelPanelProps {
@@ -31,6 +32,7 @@ export function ProductExcelPanel({
   className,
 }: ProductExcelPanelProps) {
   const { t } = useTranslation();
+  const { currentBranch } = useBranch();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -125,6 +127,11 @@ export function ProductExcelPanel({
         </Button>
       </div>
 
+      <p className="text-xs text-muted-foreground">
+        {t("pos.excel.branchScope", {
+          branch: currentBranch?.name ?? currentBranch?.code ?? "—",
+        })}
+      </p>
       <p className="text-xs text-muted-foreground">{t("pos.excel.hint")}</p>
 
       <ApiErrorAlert

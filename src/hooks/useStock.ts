@@ -78,9 +78,10 @@ function invalidateStockCatalog(queryClient: ReturnType<typeof useQueryClient>) 
 
 export function useProductExcelImport() {
   const queryClient = useQueryClient();
+  const { currentBranchId } = useBranch();
   return useMutation({
     mutationFn: ({ file, dryRun = false }: { file: File; dryRun?: boolean }) =>
-      importProductsExcel(file, dryRun),
+      importProductsExcel(file, dryRun, currentBranchId),
     onSuccess: (_result, variables) => {
       if (!variables.dryRun) {
         invalidateStockCatalog(queryClient);
@@ -90,7 +91,9 @@ export function useProductExcelImport() {
 }
 
 export function useProductExcelExport() {
+  const { currentBranchId } = useBranch();
   return useMutation({
-    mutationFn: (params: ExportProductsExcelParams) => exportProductsExcel(params),
+    mutationFn: (params: ExportProductsExcelParams) =>
+      exportProductsExcel({ ...params, branchId: params.branchId ?? currentBranchId }),
   });
 }

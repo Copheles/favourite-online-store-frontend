@@ -39,39 +39,57 @@ export async function listProducts(
   return data;
 }
 
-export async function getProductById(id: string): Promise<Product> {
-  const { data } = await axiosClient.get<Product>(`/api/products/${id}`);
+export async function getProductById(
+  id: string,
+  branchId?: string,
+): Promise<Product> {
+  const { data } = await axiosClient.get<Product>(
+    `/api/products/${id}${toQueryString({ branchId })}`,
+  );
   return data;
 }
 
-export async function createProduct(input: ProductInput): Promise<Product> {
-  const { data } = await axiosClient.post<Product>("/api/products", input);
+export async function createProduct(
+  input: ProductInput,
+  branchId?: string,
+): Promise<Product> {
+  const { data } = await axiosClient.post<Product>(
+    `/api/products${toQueryString({ branchId })}`,
+    input,
+  );
   return data;
 }
 
 export async function updateProduct(
   id: string,
   input: Partial<ProductInput>,
+  branchId?: string,
 ): Promise<Product> {
   const { data } = await axiosClient.patch<Product>(
-    `/api/products/${id}`,
+    `/api/products/${id}${toQueryString({ branchId })}`,
     input,
   );
   return data;
 }
 
-export async function deleteProduct(id: string): Promise<void> {
-  await axiosClient.delete(`/api/products/${id}`);
+export async function deleteProduct(
+  id: string,
+  branchId?: string,
+): Promise<void> {
+  await axiosClient.delete(
+    `/api/products/${id}${toQueryString({ branchId })}`,
+  );
 }
 
 export async function importProductsExcel(
   file: File,
   dryRun = false,
+  branchId?: string,
 ): Promise<ProductExcelImportSummary> {
   const formData = new FormData();
   formData.append("file", file);
   const { data } = await axiosClient.post<ProductExcelImportSummary>(
-    `/api/products/import-excel${toQueryString({ dryRun })}`,
+    `/api/products/import-excel${toQueryString({ dryRun, branchId })}`,
     formData,
     { headers: { "Content-Type": "multipart/form-data" } },
   );

@@ -61,6 +61,10 @@ export function ReceiptTicket({
     0,
   );
   const deliveryFee = toMoney(totals.deliveryFee);
+  const itemDiscount = toMoney(totals.itemDiscount);
+  const orderDiscount = toMoney(totals.orderDiscount);
+  const subtotal = toMoney(totals.subtotal);
+  const hasDiscount = itemDiscount > 0 || orderDiscount > 0;
 
   const orderIdDisplay = receipt.orderNumber ?? receipt.orderId;
   const invoiceDisplay = receipt.invoiceNumber;
@@ -155,6 +159,36 @@ export function ReceiptTicket({
 
       <table className="receipt-items receipt-totals-table">
         <tbody>
+          {hasDiscount && (
+            <tr>
+              <td className="col-name">Subtotal :</td>
+              <td className="col-qty">{qtySum}</td>
+              <td className="col-price" />
+              <td className="col-amount">{formatMoney(subtotal)}</td>
+            </tr>
+          )}
+          {itemDiscount > 0 && (
+            <tr>
+              <td className="col-name">Item Discount :</td>
+              <td className="col-qty" />
+              <td className="col-price" />
+              <td className="col-amount">
+                {"\u2212"}
+                {formatMoney(itemDiscount)}
+              </td>
+            </tr>
+          )}
+          {orderDiscount > 0 && (
+            <tr>
+              <td className="col-name">Order Discount :</td>
+              <td className="col-qty" />
+              <td className="col-price" />
+              <td className="col-amount">
+                {"\u2212"}
+                {formatMoney(orderDiscount)}
+              </td>
+            </tr>
+          )}
           {deliveryFee > 0 && (
             <tr>
               <td className="col-name">Delivery :</td>
@@ -163,12 +197,14 @@ export function ReceiptTicket({
               <td className="col-amount">{formatMoney(deliveryFee)}</td>
             </tr>
           )}
-          <tr>
-            <td className="col-name">Total :</td>
-            <td className="col-qty">{qtySum}</td>
-            <td className="col-price" />
-            <td className="col-amount">{formatMoney(amountSum)}</td>
-          </tr>
+          {!hasDiscount && (
+            <tr>
+              <td className="col-name">Total :</td>
+              <td className="col-qty">{qtySum}</td>
+              <td className="col-price" />
+              <td className="col-amount">{formatMoney(amountSum)}</td>
+            </tr>
+          )}
         </tbody>
       </table>
 

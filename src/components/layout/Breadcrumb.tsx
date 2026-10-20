@@ -83,8 +83,9 @@ function buildBreadcrumbs(
     "/products": { labelKey: "pos.modules.products", parent: "/dashboard" },
     "/products/create": {
       labelKey: "pos.settings.addProduct",
-      parent: "/products",
+      parent: "/stock",
     },
+    "/categories": { labelKey: "pos.modules.categories", parent: "/dashboard" },
     "/expenses": { labelKey: "pos.modules.expenses", parent: "/dashboard" },
     "/customers": { labelKey: "sidebar.menu.customers", parent: "/dashboard" },
     "/customers/outstanding": {
@@ -114,6 +115,16 @@ function buildBreadcrumbs(
       parent: "/dashboard",
     },
   };
+
+  const stockProductMatch = pathname.match(/^\/stock\/([^/]+)$/);
+  if (stockProductMatch) {
+    const crumbs: BreadcrumbItem[] = [
+      { label: t("sidebar.menu.dashboard"), path: "/dashboard" },
+      { label: t("pos.modules.stockList"), path: "/stock" },
+      { label: t("pos.products.edit"), path: pathname },
+    ];
+    return crumbs;
+  }
 
   const current = routeMap[pathname];
   if (!current) return [{ label: t("sidebar.menu.dashboard"), path: "/dashboard" }];

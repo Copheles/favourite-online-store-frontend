@@ -339,6 +339,9 @@ export interface Product {
   saleOrder: number;
   stockQty: number;
   isActive: boolean;
+  canDelete?: boolean;
+  orderItemCount?: number;
+  stockMovementCount?: number;
   createdAt: string;
   updatedAt: string;
 }

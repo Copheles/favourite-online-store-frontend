@@ -45,7 +45,12 @@ export function RestockModal({
 }: RestockModalProps) {
   const { t } = useTranslation();
   const mutation = useStockMovementMutation();
-  const { accessibleBranches, defaultBranchId, currentBranchId } = useBranch();
+  const {
+    accessibleBranches,
+    defaultBranchId,
+    currentBranchId,
+    canSwitchBranch,
+  } = useBranch();
   const [selectedLabel, setSelectedLabel] = useState(
     initialProduct ? `${initialProduct.name} (${initialProduct.code})` : "",
   );
@@ -64,6 +69,14 @@ export function RestockModal({
   );
 
   const schema = useMemo(() => getStockMovementSchema(t), [t]);
+  const movementTypeOptions = useMemo(
+    () => [
+      { value: "IN", label: t("pos.stock.movementTypes.IN") },
+      { value: "OUT", label: t("pos.stock.movementTypes.OUT") },
+    ],
+    [t],
+  );
+
   const form = useForm<StockMovementFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -78,6 +91,7 @@ export function RestockModal({
   });
 
   const formBranchId = form.watch("branchId");
+  const movementType = form.watch("type");
   const prevBranchRef = useRef(formBranchId);
 
   useEffect(() => {
@@ -89,13 +103,14 @@ export function RestockModal({
   }, [formBranchId, form, initialProduct]);
 
   function onSubmit(values: StockMovementFormValues) {
+    const isOut = values.type === "OUT";
     mutation.mutate(
       {
         productId: values.productId,
         branchId: values.branchId,
-        type: "IN",
+        type: values.type === "OUT" ? "OUT" : "IN",
         quantity: values.quantity,
-        buyPrice: values.buyPrice ?? null,
+        buyPrice: isOut ? null : values.buyPrice ?? null,
         purchaseDate: values.purchaseDate,
         note: values.note || null,
       },
@@ -110,8 +125,8 @@ export function RestockModal({
 
   return (
     <PosModal
-      title={t("pos.stock.restockTitle")}
-      description={t("pos.stock.restockDescription")}
+      title={t("pos.stock.entryTitle")}
+      description={t("pos.stock.entryDescription")}
       onClose={onClose}
       closeLabel={t("pos.common.cancel")}
     >
@@ -126,9 +141,15 @@ export function RestockModal({
               name="branchId"
               label={t("pos.stock.branch")}
               options={branchOptions}
-              disabled={branchOptions.length <= 1}
+              disabled={!canSwitchBranch}
             />
           </div>
+          <FormSelect
+            control={form.control}
+            name="type"
+            label={t("pos.stock.movementType")}
+            options={movementTypeOptions}
+          />
           <FormField
             control={form.control}
             name="productId"
@@ -160,13 +181,15 @@ export function RestockModal({
             type="number"
             min={1}
           />
-          <FormTextField
-            control={form.control}
-            name="buyPrice"
-            label={t("pos.stock.buyPrice")}
-            type="number"
-            min={0}
-          />
+          {movementType !== "OUT" && (
+            <FormTextField
+              control={form.control}
+              name="buyPrice"
+              label={t("pos.stock.buyPrice")}
+              type="number"
+              min={0}
+            />
+          )}
           <FormField
             control={form.control}
             name="purchaseDate"
@@ -199,7 +222,9 @@ export function RestockModal({
           </div>
           <div className="flex items-center gap-2 sm:col-span-2">
             <Button type="submit" disabled={mutation.isPending}>
-              {t("pos.stock.restock")}
+              {movementType === "OUT"
+                ? t("pos.stock.recordOut")
+                : t("pos.stock.restock")}
             </Button>
             <Button type="button" variant="outline" onClick={onClose}>
               {t("pos.common.cancel")}

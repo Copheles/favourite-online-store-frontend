@@ -14,7 +14,7 @@ export function ProductCreatePage() {
   const { toasts, showToast, dismiss } = usePosToast();
 
   if (!canWriteCatalog) {
-    return <Navigate to="/products" replace />;
+    return <Navigate to="/stock" replace />;
   }
 
   return (
@@ -24,7 +24,7 @@ export function ProductCreatePage() {
           title={t("pos.settings.addProduct")}
           description={t("pos.settings.productCreateHint")}
           action={
-            <Button variant="outline" onClick={() => navigate("/products")}>
+            <Button variant="outline" onClick={() => navigate("/stock")}>
               {t("pos.common.cancel")}
             </Button>
           }

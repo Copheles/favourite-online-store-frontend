@@ -54,14 +54,18 @@ export function PosTableBody({
 export function PosTableRow({
   children,
   className,
+  onClick,
 }: {
   children: React.ReactNode;
   className?: string;
+  onClick?: React.MouseEventHandler<HTMLTableRowElement>;
 }) {
   return (
     <tr
+      onClick={onClick}
       className={cn(
         "border-t border-border/70 transition-colors hover:bg-primary/[0.03] dark:hover:bg-primary/[0.06]",
+        onClick && "cursor-pointer",
         className,
       )}
     >

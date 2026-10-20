@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { ApiErrorAlert } from "@/components/forms/ApiErrorAlert";
 import { PosModal } from "@/components/shared/pos/PosModal";
 
 export function DeleteConfirmModal({
@@ -8,6 +9,7 @@ export function DeleteConfirmModal({
   cancelLabel,
   closeLabel,
   isPending,
+  error,
   onClose,
   onConfirm,
 }: {
@@ -17,12 +19,18 @@ export function DeleteConfirmModal({
   cancelLabel: string;
   closeLabel: string;
   isPending?: boolean;
+  error?: unknown;
   onClose: () => void;
   onConfirm: () => void;
 }) {
   return (
     <PosModal title={title} onClose={onClose} closeLabel={closeLabel}>
       <p className="text-sm text-muted-foreground">{message}</p>
+      {error ? (
+        <div className="mt-3">
+          <ApiErrorAlert error={error} />
+        </div>
+      ) : null}
       <div className="mt-6 flex justify-end gap-2">
         <Button
           type="button"

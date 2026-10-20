@@ -56,12 +56,13 @@ export const queryKeys = {
     all: ["products"] as const,
     list: (params: ListProductsParams) =>
       [...queryKeys.products.all, "list", params] as const,
-    detail: (id: string) => [...queryKeys.products.all, "detail", id] as const,
+    detail: (id: string, branchId?: string | null) =>
+      [...queryKeys.products.all, "detail", id, branchId ?? null] as const,
   },
   categories: {
     all: ["categories"] as const,
-    list: (type?: "TOP" | "SUB") =>
-      [...queryKeys.categories.all, type ?? "all"] as const,
+    list: (params: { type?: "TOP" | "SUB"; branchId?: string | null } = {}) =>
+      [...queryKeys.categories.all, params] as const,
   },
   expenses: {
     all: ["expenses"] as const,

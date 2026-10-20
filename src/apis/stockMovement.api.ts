@@ -44,9 +44,12 @@ export interface CreateStockMovementInput {
   note?: string | null;
 }
 
+export type ListMovementTypeFilter = "IN" | "OUT" | "OUT_RETURN" | "ALL";
+
 export interface ListStockMovementsParams {
   branchId?: string;
   productId?: string;
+  type?: ListMovementTypeFilter;
   fromDate?: string;
   toDate?: string;
   search?: string;

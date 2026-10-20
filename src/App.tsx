@@ -28,6 +28,14 @@ const ProductCreatePage = lazy(() =>
     default: m.ProductCreatePage,
   })),
 );
+const ProductStockEditPage = lazy(() =>
+  import("@/pages/ProductStockEditPage").then((m) => ({
+    default: m.ProductStockEditPage,
+  })),
+);
+const CategoriesPage = lazy(() =>
+  import("@/pages/CategoriesPage").then((m) => ({ default: m.CategoriesPage })),
+);
 const ExpensesPage = lazy(() =>
   import("@/pages/ExpensesPage").then((m) => ({ default: m.ExpensesPage })),
 );
@@ -87,8 +95,10 @@ export default function App() {
               <Route path="/sale" element={<SalePage />} />
             </Route>
             <Route path="/stock" element={<StockPage />} />
+            <Route path="/stock/:productId" element={<ProductStockEditPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/create" element={<ProductCreatePage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/orders/pending" element={<OrdersPage />} />

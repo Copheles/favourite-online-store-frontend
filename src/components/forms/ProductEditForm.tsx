@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
@@ -17,7 +17,8 @@ import { FormSelect } from "@/components/forms/FormSelect";
 import { FormTextField } from "@/components/forms/FormTextField";
 import { CategoryQuickCreate } from "@/components/forms/ProductCreateForm";
 import { ErrorState, LoadingState } from "@/components/shared/PageStates";
-import { useCategories, useUpdateProduct } from "@/hooks/useAdmin";
+import { useCategories, useDeleteProduct, useUpdateProduct } from "@/hooks/useAdmin";
+import { DeleteConfirmModal } from "@/components/shared/pos/DeleteConfirmModal";
 import { formatMoney } from "@/lib/format";
 import type { Product } from "@/types/api";
 import {
@@ -41,13 +42,17 @@ export function ProductEditForm({
   product,
   onSuccess,
   onCancel,
+  onDeleted,
 }: {
   product: Product;
   onSuccess?: (product: Product) => void;
   onCancel: () => void;
+  onDeleted?: () => void;
 }) {
   const { t } = useTranslation();
   const updateMutation = useUpdateProduct();
+  const deleteMutation = useDeleteProduct();
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const topCategories = useCategories("TOP");
   const subCategories = useCategories("SUB");
 
@@ -72,18 +77,41 @@ export function ProductEditForm({
     const filtered = topCategoryId
       ? items.filter((c) => c.parentId === topCategoryId)
       : items;
-    return filtered.map((c) => ({ value: c.id, label: c.name }));
-  }, [subCategories.data?.items, topCategoryId]);
+    const options = filtered.map((c) => ({ value: c.id, label: c.name }));
+
+    const savedSubId = product.subCategoryId;
+    if (
+      savedSubId &&
+      topCategoryId === product.topCategoryId &&
+      !options.some((o) => o.value === savedSubId)
+    ) {
+      const label =
+        product.subCategory?.name ??
+        items.find((c) => c.id === savedSubId)?.name ??
+        savedSubId;
+      options.unshift({ value: savedSubId, label });
+    }
+
+    return options;
+  }, [
+    subCategories.data?.items,
+    topCategoryId,
+    product.subCategoryId,
+    product.topCategoryId,
+    product.subCategory?.name,
+  ]);
+
+  const categoriesLoading = topCategories.isLoading || subCategories.isLoading;
+  const categoriesError = topCategories.error || subCategories.error;
 
   useEffect(() => {
+    if (categoriesLoading) return;
+
     const currentSub = form.getValues("subCategoryId");
     if (currentSub && !subOptions.some((o) => o.value === currentSub)) {
       form.setValue("subCategoryId", "");
     }
-  }, [topCategoryId, subOptions, form]);
-
-  const categoriesLoading = topCategories.isLoading || subCategories.isLoading;
-  const categoriesError = topCategories.error || subCategories.error;
+  }, [topCategoryId, subOptions, form, categoriesLoading]);
 
   function handleSubmit(values: ProductEditFormValues) {
     updateMutation.mutate(
@@ -106,6 +134,17 @@ export function ProductEditForm({
         },
       },
     );
+  }
+
+  const canHardDelete = product.canDelete === true;
+
+  function confirmDelete() {
+    deleteMutation.mutate(product.id, {
+      onSuccess: () => {
+        setDeleteOpen(false);
+        onDeleted?.();
+      },
+    });
   }
 
   return (
@@ -264,18 +303,37 @@ export function ProductEditForm({
 
         <ApiErrorAlert error={updateMutation.error} />
 
+        {!canHardDelete && product.canDelete === false && (
+          <p className="text-xs text-muted-foreground">
+            {t("pos.products.deleteBlockedHint")}
+          </p>
+        )}
+
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-          {product.isActive && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-destructive"
-              disabled={updateMutation.isPending}
-              onClick={handleDeactivate}
-            >
-              {t("pos.products.deactivate")}
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {canHardDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive"
+                disabled={updateMutation.isPending || deleteMutation.isPending}
+                onClick={() => setDeleteOpen(true)}
+              >
+                {t("pos.common.delete")}
+              </Button>
+            )}
+            {product.isActive && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive"
+                disabled={updateMutation.isPending || deleteMutation.isPending}
+                onClick={handleDeactivate}
+              >
+                {t("pos.products.deactivate")}
+              </Button>
+            )}
+          </div>
           <div className="ml-auto flex gap-2">
             <Button type="button" variant="outline" onClick={onCancel}>
               {t("pos.common.cancel")}
@@ -296,6 +354,23 @@ export function ProductEditForm({
           </div>
         </div>
       </form>
+
+      {deleteOpen && (
+        <DeleteConfirmModal
+          title={t("pos.products.deleteTitle")}
+          message={t("pos.products.deleteConfirm", { name: product.name })}
+          confirmLabel={t("pos.common.delete")}
+          cancelLabel={t("pos.common.cancel")}
+          closeLabel={t("pos.common.close")}
+          isPending={deleteMutation.isPending}
+          error={deleteMutation.error}
+          onClose={() => {
+            deleteMutation.reset();
+            setDeleteOpen(false);
+          }}
+          onConfirm={confirmDelete}
+        />
+      )}
     </Form>
   );
 }

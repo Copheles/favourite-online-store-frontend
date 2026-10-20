@@ -6,6 +6,7 @@ import { useAuthBootstrap } from "@/hooks/useAuthBootstrap";
 import { useAuth } from "@/hooks/useAuth";
 import { useAppDispatch } from "@/redux/hooks";
 import { logout, completeLogout } from "@/redux/slices/authSlice";
+import { logout as logoutApi } from "@/apis/auth.api";
 import { beginLogout, endLogout, isLoggingOut } from "@/lib/authSession";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (window.location.pathname.startsWith("/login")) return;
 
       beginLogout();
+      void logoutApi().catch(() => undefined);
       dispatch(logout());
       queryClient.cancelQueries();
       navigate("/login", { replace: true });

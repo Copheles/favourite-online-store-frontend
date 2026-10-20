@@ -24,7 +24,8 @@ export function useBranch() {
     );
 
     const isDefaultBranch = resolvedId === user?.defaultBranchId;
-    const canWriteCatalog = Boolean(canWrite && hasStoreOperatorAccess && isDefaultBranch);
+    // Catalog is branch-owned: operators may write on any accessible current branch.
+    const canWriteCatalog = Boolean(canWrite && hasStoreOperatorAccess && resolvedId);
 
     return {
       currentBranchId: resolvedId,

@@ -103,7 +103,8 @@
       "expenses": "Expenses",
       "ownerIntegration": "Owner API Integration",
       "userManagement": "User Management",
-      "branchManagement": "Branch Management"
+      "branchManagement": "Branch Management",
+      "categories": "Categories"
     },
     "userManagement": {
       "title": "User Management",
@@ -236,6 +237,11 @@
       },
       "status": {
         "ALL": "All statuses"
+      },
+      "categoryType": {
+        "ALL": "All types",
+        "TOP": "Top category",
+        "SUB": "Sub category"
       }
     },
     "sale": {
@@ -352,7 +358,6 @@
       "deliveryFee": "Delivery fee",
       "tax": "Tax",
       "thankYou": "Thank you for your purchase!",
-      "orderId": "Order ID",
       "invoiceNo": "Invoice No",
       "printTime": "Print time",
       "orderDateTime": "Order date/time",
@@ -417,9 +422,20 @@
       "purchaseDate": "Purchase date",
       "dateFrom": "From date",
       "dateTo": "To date",
-      "movementHistory": "Restock history",
+      "movementHistory": "Stock movement history",
+      "catalogDescription": "Browse products, adjust stock, and open a product to edit details or view movement history.",
+      "backToCatalog": "Back to stock list",
+      "noProductMovements": "No stock movements recorded for this product yet.",
+      "entryDescription": "Record stock in (restock) or stock out (adjustment) for the selected branch.",
+      "recordOut": "Record stock out",
+      "movementTypes": {
+        "IN": "Stock in",
+        "OUT": "Stock out",
+        "OUT_RETURN": "Sale return",
+        "REPACK": "Repack"
+      },
       "historyDescription": "Manual stock entries added through restock.",
-      "viewingBranch": "Showing restock history for {{branch}}.",
+      "viewingBranch": "Branch: {{branch}}.",
       "noMovements": "No restock records found for this branch.",
       "noMovementsFiltered": "No restock records match your search or date filters. Try Reset.",
       "searchProduct": "Search product by name or code...",
@@ -438,6 +454,10 @@
       "deactivated": "Product deactivated.",
       "deactivate": "Deactivate",
       "deactivateConfirm": "Deactivate this product? It will no longer appear in sales.",
+      "deleteTitle": "Delete product",
+      "deleteConfirm": "Permanently delete \"{{name}}\"? This cannot be undone.",
+      "deleted": "Deleted {{name}}.",
+      "deleteBlockedHint": "This product has order or stock history and cannot be deleted. Deactivate it to hide from sales.",
       "stockReadOnlyHint": "To change stock quantity, use",
       "unit": "Unit",
       "descriptionField": "Description",
@@ -454,7 +474,8 @@
       "export": "Export Excel",
       "checking": "Checking file...",
       "exporting": "Exporting...",
-      "hint": "Super admin only. Use .xlsx TARA stock reports. Dry-run first, then apply. Negative qty is stored on your default branch; POS still blocks sales at zero or below.",
+      "hint": "Admin/Owner only. Import and export apply to the currently selected branch catalog. Use .xlsx TARA stock reports. Dry-run first, then apply. POS still blocks sales at zero or below.",
+      "branchScope": "Selected branch: {{branch}}",
       "checked": "Excel file checked — review the summary, then apply import.",
       "completed": "Excel import completed.",
       "validationFailed": "Fix the errors below before importing.",
@@ -838,7 +859,29 @@
       "dateRequired": "Date is required",
       "max64": "Must be 64 characters or less",
       "max128": "Must be 128 characters or less",
-      "invalidValue": "Invalid value"
+      "invalidValue": "Invalid value",
+      "parentCategoryRequired": "Parent category is required"
+    },
+    "categories": {
+      "title": "Categories",
+      "description": "Manage top and sub categories for the selected branch.",
+      "branchScope": "Selected branch: {{branch}}",
+      "add": "Add category",
+      "addTitle": "Add category",
+      "editTitle": "Edit category",
+      "searchPlaceholder": "Search categories...",
+      "empty": "No categories found.",
+      "name": "Name",
+      "type": "Type",
+      "typeTop": "Top category",
+      "typeSub": "Sub category",
+      "parent": "Parent category",
+      "noParent": "—",
+      "selectParent": "Select parent category",
+      "filterByType": "Filter by type",
+      "formHint": "Top categories group products. Sub categories must belong to a top category in this branch.",
+      "deleteTitle": "Delete category",
+      "deleteConfirm": "Delete \"{{name}}\"? Categories in use by products or with subcategories cannot be deleted."
     }
   }
 }

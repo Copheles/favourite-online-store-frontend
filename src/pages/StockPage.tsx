@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Plus, PackagePlus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { FolderTree, PackagePlus, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { RestockModal } from "@/components/shared/pos/RestockModal";
+import { StockStatusBadge } from "@/components/shared/pos/StockStatusBadge";
 import {
   EmptyState,
   ErrorState,
@@ -23,30 +24,37 @@ import {
   PosRecordCard,
   PosRecordCardList,
 } from "@/components/shared/pos/PosRecordCard";
+import { PosFilterSelect } from "@/components/shared/pos/PosFilterSelect";
 import { PosPagination } from "@/components/shared/pos/PosPagination";
 import { PosSearchBar } from "@/components/shared/pos/PosSearchBar";
 import {
   PosSummaryCard,
   PosSummaryCards,
 } from "@/components/shared/pos/PosSummaryCards";
-import { PosToolbar, PosToolbarActions, PosToolbarGroup } from "@/components/shared/pos/PosToolbar";
-import { TableSkeleton } from "@/components/shared/pos/TableSkeleton";
-import { RestockModal } from "@/components/shared/pos/RestockModal";
 import { PosToaster, usePosToast } from "@/components/shared/pos/PosToast";
+import { PosToolbar } from "@/components/shared/pos/PosToolbar";
+import { TableSkeleton } from "@/components/shared/pos/TableSkeleton";
 import { useAppliedSearch } from "@/hooks/useAppliedSearch";
 import { useBranch } from "@/hooks/useBranch";
-import { useUrlLimit, useUrlPage, useUrlStringParam } from "@/hooks/useUrlQuery";
-import { useInventoryBalance, useStockMovements } from "@/hooks/useStock";
-import { formatDate, formatMoney } from "@/lib/format";
+import { useUrlEnumParam, useUrlLimit, useUrlPage } from "@/hooks/useUrlQuery";
+import { useProducts } from "@/hooks/useAdmin";
+import { useInventoryBalance } from "@/hooks/useStock";
+import { formatMoney } from "@/lib/format";
+import {
+  getStockStatusFromQty,
+  STOCK_STATUS_FILTERS,
+  stockStatusToApi,
+  type StockStatusFilter,
+} from "@/lib/listFilters";
 import { PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/queryConfig";
-import { resetUrlPage } from "@/lib/urlQuery";
+import type { Product } from "@/types/api";
+import { cn } from "@/lib/utils";
 
 export function StockPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { canRestock, canWriteCatalog, currentBranch } = useBranch();
   const { toasts, showToast, dismiss } = usePosToast();
-  const [, setSearchParams] = useSearchParams();
   const {
     searchInput,
     setSearchInput,
@@ -55,10 +63,28 @@ export function StockPage() {
     resetSearch,
   } = useAppliedSearch();
   const [page, setPage] = useUrlPage();
-  const [limit, setLimit] = useUrlLimit(PAGE_SIZE.stock, PAGE_SIZE_OPTIONS.stock);
-  const [fromDate, setFromDate] = useUrlStringParam("from");
-  const [toDate, setToDate] = useUrlStringParam("to");
+  const [limit, setLimit] = useUrlLimit(
+    PAGE_SIZE.products,
+    PAGE_SIZE_OPTIONS.products,
+  );
+  const [stockFilter, setStockFilter] = useUrlEnumParam<StockStatusFilter>(
+    "stock",
+    "ALL",
+    STOCK_STATUS_FILTERS,
+  );
+  const [restockProduct, setRestockProduct] = useState<Product | null>(null);
   const [restockOpen, setRestockOpen] = useState(false);
+
+  const productQueryParams = useMemo(
+    () => ({
+      search: appliedSearch || undefined,
+      stockStatus: stockStatusToApi(stockFilter),
+      page,
+      limit,
+      isActive: true as const,
+    }),
+    [appliedSearch, stockFilter, page, limit],
+  );
 
   const summaryQuery = useInventoryBalance({
     page: 1,
@@ -68,215 +94,269 @@ export function StockPage() {
   });
   const summary = summaryQuery.data?.summary;
 
-  const query = useStockMovements({
-    search: appliedSearch || undefined,
-    fromDate: fromDate || undefined,
-    toDate: toDate || undefined,
-    page,
-    limit,
-  });
-
+  const query = useProducts(productQueryParams);
   const rows = query.data?.items ?? [];
   const totalPages = query.data?.meta.totalPages ?? 1;
-  const hasActiveFilters = Boolean(appliedSearch || fromDate || toDate);
+
   const branchLabel = currentBranch
     ? `${currentBranch.name} (${currentBranch.code})`
     : null;
 
-  function resetFilters() {
-    setSearchInput("");
-    setFromDate("");
-    setToDate("");
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete("q");
-      next.delete("from");
-      next.delete("to");
-      next.delete("type");
-      resetUrlPage(next);
-      return next;
-    });
+  function openProduct(productId: string) {
+    navigate(`/stock/${productId}`);
+  }
+
+  function renderAvailability(row: Product) {
+    return (
+      <span
+        className={cn(
+          "rounded-full px-2 py-1 text-xs font-semibold",
+          row.availability === "AVAILABLE"
+            ? "bg-success text-success-foreground"
+            : "bg-muted text-muted-foreground",
+        )}
+      >
+        {row.availability}
+      </span>
+    );
+  }
+
+  function renderRowActions(row: Product) {
+    if (!canRestock && !canWriteCatalog) return null;
+    return (
+      <>
+        {canRestock && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={(event) => {
+              event.stopPropagation();
+              setRestockProduct(row);
+            }}
+          >
+            <PackagePlus className="size-3.5" />
+            {t("pos.stock.restock")}
+          </Button>
+        )}
+        {canWriteCatalog && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={(event) => {
+              event.stopPropagation();
+              openProduct(row.id);
+            }}
+          >
+            <Pencil className="size-3.5" />
+            {t("pos.common.edit")}
+          </Button>
+        )}
+      </>
+    );
   }
 
   return (
-    <PosPageShell>
-      <PageHeader
-        title={t("pos.modules.stockList")}
-        description={
-          branchLabel
-            ? `${t("pos.stock.historyDescription")} ${t("pos.stock.viewingBranch", { branch: branchLabel })}`
-            : t("pos.stock.historyDescription")
-        }
-        action={
-          (canWriteCatalog || canRestock) ? (
-            <div className="flex flex-wrap gap-2">
-              {canWriteCatalog && (
+    <>
+      <PosPageShell>
+        <PageHeader
+          title={t("pos.modules.stockList")}
+          description={
+            branchLabel
+              ? `${t("pos.stock.catalogDescription")} ${t("pos.stock.viewingBranch", { branch: branchLabel })}`
+              : t("pos.stock.catalogDescription")
+          }
+          action={
+            (canWriteCatalog || canRestock) ? (
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => navigate("/products/create")}
+                  onClick={() => navigate("/categories")}
                 >
-                  <Plus className="size-4" />
-                  {t("pos.settings.addProduct")}
+                  <FolderTree className="size-4" />
+                  {t("pos.categories.title")}
                 </Button>
-              )}
-              {canRestock && (
-                <Button onClick={() => setRestockOpen(true)}>
-                  <PackagePlus className="size-4" />
-                  {t("pos.stock.restock")}
-                </Button>
-              )}
+                {canWriteCatalog && (
+                  <Button onClick={() => navigate("/products/create")}>
+                    <Plus className="size-4" />
+                    {t("pos.settings.addProduct")}
+                  </Button>
+                )}
+                {canRestock && (
+                  <Button onClick={() => setRestockOpen(true)}>
+                    <PackagePlus className="size-4" />
+                    {t("pos.stock.addMovement")}
+                  </Button>
+                )}
+              </div>
+            ) : undefined
+          }
+        />
+
+        {summary && (
+          <PosSummaryCards className="mb-6">
+            <PosSummaryCard
+              label={t("pos.stock.totalProducts")}
+              value={summary.totalProducts}
+            />
+            <PosSummaryCard
+              label={t("pos.stock.totalQty")}
+              value={summary.totalStockQty}
+            />
+            <PosSummaryCard
+              label={t("pos.stock.lowStock")}
+              value={summary.lowStockCount}
+            />
+            <PosSummaryCard
+              label={t("pos.stock.outOfStock")}
+              value={summary.outOfStockCount}
+              accent
+            />
+          </PosSummaryCards>
+        )}
+
+        <div className="space-y-4">
+          <PosToolbar>
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+              <PosSearchBar
+                value={searchInput}
+                onChange={setSearchInput}
+                onSubmit={submitSearch}
+                onClear={resetSearch}
+                placeholder={t("pos.products.searchPlaceholder")}
+                className="w-full sm:max-w-md sm:flex-1 lg:max-w-xl"
+              />
+              <PosFilterSelect
+                value={stockFilter}
+                options={STOCK_STATUS_FILTERS}
+                onChange={setStockFilter}
+                ariaLabel={t("pos.stock.status")}
+                getLabel={(value) => t(`pos.filters.stock.${value}`)}
+                className="sm:w-48"
+              />
             </div>
-          ) : undefined
-        }
-      />
+          </PosToolbar>
 
-      {summary && (
-        <PosSummaryCards>
-          <PosSummaryCard
-            label={t("pos.stock.totalProducts")}
-            value={summary.totalProducts}
-          />
-          <PosSummaryCard
-            label={t("pos.stock.totalQty")}
-            value={summary.totalStockQty}
-          />
-          <PosSummaryCard
-            label={t("pos.stock.lowStock")}
-            value={summary.lowStockCount}
-          />
-          <PosSummaryCard
-            label={t("pos.stock.outOfStock")}
-            value={summary.outOfStockCount}
-            accent
-          />
-        </PosSummaryCards>
-      )}
+          {query.isLoading && !query.data && <TableSkeleton />}
+          {query.isError && <ErrorState />}
+          {!query.isLoading && rows.length === 0 && (
+            <EmptyState message={t("pos.products.empty")} />
+          )}
 
-      <div>
-        <h2 className="mb-3 text-lg font-bold text-foreground">
-          {t("pos.stock.movementHistory")}
-        </h2>
-        <PosToolbar className="mb-4">
-          <PosToolbarGroup>
-            <PosSearchBar
-              value={searchInput}
-              onChange={setSearchInput}
-              onSubmit={submitSearch}
-              onClear={resetSearch}
-              placeholder={t("pos.stock.searchPlaceholder")}
-              className="w-full min-w-0 max-w-none lg:col-span-2"
-            />
-            <Input
-              type="date"
-              aria-label={t("pos.stock.dateFrom")}
-              value={fromDate}
-              onChange={(event) => setFromDate(event.target.value)}
-            />
-            <Input
-              type="date"
-              aria-label={t("pos.stock.dateTo")}
-              value={toDate}
-              onChange={(event) => setToDate(event.target.value)}
-            />
-          </PosToolbarGroup>
-          <PosToolbarActions>
-            <Button variant="outline" size="sm" onClick={resetFilters}>
-              {t("pos.common.reset")}
-            </Button>
-          </PosToolbarActions>
-        </PosToolbar>
-      </div>
+          {!query.isLoading && rows.length > 0 && (
+            <>
+              <PosRecordCardList>
+                {rows.map((row) => (
+                  <PosRecordCard
+                    key={row.id}
+                    title={row.name}
+                    subtitle={row.code}
+                    onTitleClick={() => openProduct(row.id)}
+                    trailing={
+                      <>
+                        <StockStatusBadge
+                          status={getStockStatusFromQty(row.stockQty)}
+                        />
+                        {renderAvailability(row)}
+                      </>
+                    }
+                    fields={[
+                      { label: t("pos.stock.price"), value: formatMoney(row.sellingPrice) },
+                      { label: t("pos.settings.discount"), value: formatMoney(row.discount) },
+                      { label: t("pos.sale.stock"), value: row.stockQty },
+                      {
+                        label: t("pos.settings.barcode"),
+                        value: row.barcode ?? null,
+                      },
+                    ]}
+                    actions={renderRowActions(row)}
+                  />
+                ))}
+              </PosRecordCardList>
 
-      {query.isLoading && !query.data && <TableSkeleton rows={8} cols={6} />}
-      {query.isError && <ErrorState />}
-      {!query.isLoading && rows.length === 0 && (
-        <EmptyState
-          message={
-            hasActiveFilters
-              ? t("pos.stock.noMovementsFiltered")
-              : t("pos.stock.noMovements")
+              <PosDataTable className="hidden md:block">
+                <PosTable>
+                  <PosTableHead>
+                    <tr>
+                      <PosTableHeaderCell>
+                        {t("pos.settings.productName")}
+                      </PosTableHeaderCell>
+                      <PosTableHeaderCell>{t("pos.stock.code")}</PosTableHeaderCell>
+                      <PosTableHeaderCell>
+                        {t("pos.settings.barcode")}
+                      </PosTableHeaderCell>
+                      <PosTableHeaderCell>{t("pos.stock.price")}</PosTableHeaderCell>
+                      <PosTableHeaderCell>
+                        {t("pos.settings.discount")}
+                      </PosTableHeaderCell>
+                      <PosTableHeaderCell>{t("pos.sale.stock")}</PosTableHeaderCell>
+                      <PosTableHeaderCell>{t("pos.stock.status")}</PosTableHeaderCell>
+                      <PosTableHeaderCell>
+                        {t("pos.products.availability")}
+                      </PosTableHeaderCell>
+                      <PosTableHeaderCell />
+                    </tr>
+                  </PosTableHead>
+                  <PosTableBody>
+                    {rows.map((row) => (
+                      <PosTableRow
+                        key={row.id}
+                        onClick={() => openProduct(row.id)}
+                      >
+                        <PosTableCell className="font-medium">
+                          {row.name}
+                        </PosTableCell>
+                        <PosTableCell>{row.code}</PosTableCell>
+                        <PosTableCell>{row.barcode ?? "-"}</PosTableCell>
+                        <PosTableCell>{formatMoney(row.sellingPrice)}</PosTableCell>
+                        <PosTableCell>{formatMoney(row.discount)}</PosTableCell>
+                        <PosTableCell>{row.stockQty}</PosTableCell>
+                        <PosTableCell>
+                          <StockStatusBadge
+                            status={getStockStatusFromQty(row.stockQty)}
+                          />
+                        </PosTableCell>
+                        <PosTableCell>{renderAvailability(row)}</PosTableCell>
+                        <PosTableCell>
+                          <div
+                            className="flex justify-end gap-2"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {renderRowActions(row)}
+                          </div>
+                        </PosTableCell>
+                      </PosTableRow>
+                    ))}
+                  </PosTableBody>
+                </PosTable>
+              </PosDataTable>
+            </>
+          )}
+
+          <PosPagination
+            page={page}
+            totalPages={totalPages}
+            total={query.data?.meta.total}
+            limit={limit}
+            pageSizeOptions={PAGE_SIZE_OPTIONS.products}
+            onPageChange={setPage}
+            onPageSizeChange={setLimit}
+          />
+        </div>
+      </PosPageShell>
+
+      {canRestock && restockProduct && (
+        <RestockModal
+          initialProduct={{
+            productId: restockProduct.id,
+            name: restockProduct.name,
+            code: restockProduct.code,
+          }}
+          onClose={() => setRestockProduct(null)}
+          onSuccess={() =>
+            showToast("success", t("pos.stock.restockSuccess"))
           }
         />
       )}
-
-      {!query.isLoading && rows.length > 0 && (
-        <>
-          <PosRecordCardList>
-            {rows.map((row) => (
-              <PosRecordCard
-                key={row.id}
-                title={row.product?.name ?? row.productName ?? "-"}
-                subtitle={row.product?.code ?? row.productCode ?? undefined}
-                trailing={
-                  <span className="text-sm font-semibold text-foreground">
-                    +{row.quantity}
-                  </span>
-                }
-                fields={[
-                  {
-                    label: t("pos.stock.purchaseDate"),
-                    value: formatDate(row.purchaseDate),
-                  },
-                  {
-                    label: t("pos.stock.buyPrice"),
-                    value: row.buyPrice == null ? null : formatMoney(row.buyPrice),
-                  },
-                  { label: t("pos.stock.by"), value: row.createdBy?.username ?? null },
-                  { label: t("pos.members.note"), value: row.note || null },
-                ]}
-              />
-            ))}
-          </PosRecordCardList>
-
-          <PosDataTable className="hidden md:block">
-            <PosTable>
-              <PosTableHead>
-                <tr>
-                  <PosTableHeaderCell>{t("pos.stock.purchaseDate")}</PosTableHeaderCell>
-                  <PosTableHeaderCell>{t("pos.stock.product")}</PosTableHeaderCell>
-                  <PosTableHeaderCell>{t("pos.stock.qty")}</PosTableHeaderCell>
-                  <PosTableHeaderCell>{t("pos.stock.buyPrice")}</PosTableHeaderCell>
-                  <PosTableHeaderCell>{t("pos.members.note")}</PosTableHeaderCell>
-                  <PosTableHeaderCell>{t("pos.stock.by")}</PosTableHeaderCell>
-                </tr>
-              </PosTableHead>
-              <PosTableBody>
-                {rows.map((row) => (
-                  <PosTableRow key={row.id}>
-                    <PosTableCell>{formatDate(row.purchaseDate)}</PosTableCell>
-                    <PosTableCell className="font-medium">
-                      <span className="block">
-                        {row.product?.name ?? row.productName ?? "-"}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {row.product?.code ?? row.productCode ?? ""}
-                      </span>
-                    </PosTableCell>
-                    <PosTableCell>{row.quantity}</PosTableCell>
-                    <PosTableCell>
-                      {row.buyPrice == null ? "-" : formatMoney(row.buyPrice)}
-                    </PosTableCell>
-                    <PosTableCell className="max-w-[16rem] truncate">
-                      {row.note || "-"}
-                    </PosTableCell>
-                    <PosTableCell>{row.createdBy?.username ?? "-"}</PosTableCell>
-                  </PosTableRow>
-                ))}
-              </PosTableBody>
-            </PosTable>
-          </PosDataTable>
-        </>
-      )}
-
-      <PosPagination
-        page={page}
-        totalPages={totalPages}
-        total={query.data?.meta.total}
-        limit={limit}
-        pageSizeOptions={PAGE_SIZE_OPTIONS.stock}
-        onPageChange={setPage}
-        onPageSizeChange={setLimit}
-      />
 
       {canRestock && restockOpen && (
         <RestockModal
@@ -286,6 +366,6 @@ export function StockPage() {
       )}
 
       <PosToaster toasts={toasts} onDismiss={dismiss} />
-    </PosPageShell>
+    </>
   );
 }
