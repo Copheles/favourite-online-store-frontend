@@ -458,7 +458,7 @@
       "deleteTitle": "Delete product",
       "deleteConfirm": "Permanently delete \"{{name}}\"? This cannot be undone.",
       "deleted": "Deleted {{name}}.",
-      "deleteBlockedHint": "This product has order or stock history and cannot be deleted. Deactivate it to hide from sales.",
+      "deleteBlockedHint": "This product has orders or more than one stock movement and cannot be deleted. Deactivate it to hide from sales.",
       "stockReadOnlyHint": "To change stock quantity, use",
       "unit": "Unit",
       "descriptionField": "Description",
