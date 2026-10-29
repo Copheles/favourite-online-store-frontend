@@ -159,7 +159,7 @@ export function useCreateProductWithStock() {
         sellingPrice: values.sellingPrice,
         discount: values.discount || 0,
         topCategoryId: values.topCategoryId,
-        subCategoryId: values.subCategoryId,
+        subCategoryId: values.subCategoryId?.trim() || null,
         availability: "AVAILABLE",
         type: "STOCK_CONTROL",
       };

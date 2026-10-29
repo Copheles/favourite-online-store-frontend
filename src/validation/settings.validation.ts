@@ -56,7 +56,7 @@ export const getProductSchema = (t: (key: string) => string) =>
     sellingPrice: z.number().min(0, t("pos.validation.minZero")),
     discount: z.number().min(0, t("pos.validation.minZero")),
     topCategoryId: z.string().min(1, t("pos.validation.categoryRequired")),
-    subCategoryId: z.string().min(1, t("pos.validation.categoryRequired")),
+    subCategoryId: optionalString(64),
     initialStockQty: z.number().min(0, t("pos.validation.minZero")),
     buyPrice: z.number().min(0, t("pos.validation.minZero")),
   });

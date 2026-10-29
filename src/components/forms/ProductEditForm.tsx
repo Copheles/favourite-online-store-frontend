@@ -236,7 +236,7 @@ export function ProductEditForm({
           <FormSelect
             control={form.control}
             name="subCategoryId"
-            label={t("pos.settings.subCategory")}
+            label={`${t("pos.settings.subCategory")} (${t("pos.common.optional")})`}
             options={subOptions}
             placeholder={t("pos.settings.selectCategory")}
           />
@@ -343,8 +343,7 @@ export function ProductEditForm({
               disabled={
                 updateMutation.isPending ||
                 categoriesLoading ||
-                topOptions.length === 0 ||
-                subOptions.length === 0
+                topOptions.length === 0
               }
             >
               {updateMutation.isPending

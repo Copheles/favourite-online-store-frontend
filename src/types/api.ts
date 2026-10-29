@@ -333,9 +333,9 @@ export interface Product {
   type: ProductType;
   availability: Availability;
   topCategoryId: string;
-  subCategoryId: string;
+  subCategoryId: string | null;
   topCategory?: CategoryRef;
-  subCategory?: CategoryRef;
+  subCategory?: CategoryRef | null;
   saleOrder: number;
   stockQty: number;
   isActive: boolean;
@@ -357,7 +357,7 @@ export interface ProductInput {
   type?: ProductType;
   availability?: Availability;
   topCategoryId: string;
-  subCategoryId: string;
+  subCategoryId?: string | null;
   saleOrder?: number;
   isActive?: boolean;
 }
