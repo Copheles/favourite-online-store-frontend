@@ -441,6 +441,7 @@
       "noMovementsFiltered": "No restock records match your search or date filters. Try Reset.",
       "searchProduct": "Search product by name or code...",
       "noProductsFound": "No products found.",
+      "selectTopCategoryFirst": "Select top first",
       "by": "By"
     },
     "products": {

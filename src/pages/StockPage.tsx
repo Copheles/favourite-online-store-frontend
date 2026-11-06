@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { FolderTree, PackagePlus, Pencil, Plus } from "lucide-react";
+import { FolderTree, PackagePlus, Pencil, Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { RestockModal } from "@/components/shared/pos/RestockModal";
 import { StockStatusBadge } from "@/components/shared/pos/StockStatusBadge";
 import {
@@ -36,8 +37,15 @@ import { PosToolbar } from "@/components/shared/pos/PosToolbar";
 import { TableSkeleton } from "@/components/shared/pos/TableSkeleton";
 import { useAppliedSearch } from "@/hooks/useAppliedSearch";
 import { useBranch } from "@/hooks/useBranch";
-import { useUrlEnumParam, useUrlLimit, useUrlPage } from "@/hooks/useUrlQuery";
-import { useProducts } from "@/hooks/useAdmin";
+import {
+  useUrlEnumParam,
+  useUrlLimit,
+  useUrlPage,
+  useUrlQueryUpdater,
+  useUrlStringParam,
+} from "@/hooks/useUrlQuery";
+import { useCategories, useProducts } from "@/hooks/useAdmin";
+import { resetUrlPage, writeUrlString } from "@/lib/urlQuery";
 import { useInventoryBalance } from "@/hooks/useStock";
 import { formatMoney } from "@/lib/format";
 import {
@@ -72,18 +80,50 @@ export function StockPage() {
     "ALL",
     STOCK_STATUS_FILTERS,
   );
+  const updateUrl = useUrlQueryUpdater();
+  const [topCategoryId] = useUrlStringParam("top");
+  const [subCategoryId, setSubCategoryId] = useUrlStringParam("sub");
   const [restockProduct, setRestockProduct] = useState<Product | null>(null);
   const [restockOpen, setRestockOpen] = useState(false);
+
+  const topCategoriesQuery = useCategories("TOP");
+  const subCategoriesQuery = useCategories("SUB");
+
+  const topCategoryOptions = useMemo(
+    () => topCategoriesQuery.data?.items ?? [],
+    [topCategoriesQuery.data?.items],
+  );
+
+  const subCategoryOptions = useMemo(() => {
+    const items = subCategoriesQuery.data?.items ?? [];
+    if (!topCategoryId) return [];
+    return items.filter((category) => category.parentId === topCategoryId);
+  }, [subCategoriesQuery.data?.items, topCategoryId]);
+
+  useEffect(() => {
+    if (!topCategoryId && subCategoryId) {
+      setSubCategoryId("", { resetPage: false });
+      return;
+    }
+    if (
+      subCategoryId &&
+      !subCategoryOptions.some((category) => category.id === subCategoryId)
+    ) {
+      setSubCategoryId("", { resetPage: false });
+    }
+  }, [topCategoryId, subCategoryId, subCategoryOptions, setSubCategoryId]);
 
   const productQueryParams = useMemo(
     () => ({
       search: appliedSearch || undefined,
+      topCategoryId: topCategoryId || undefined,
+      subCategoryId: subCategoryId || undefined,
       stockStatus: stockStatusToApi(stockFilter),
       page,
       limit,
       isActive: true as const,
     }),
-    [appliedSearch, stockFilter, page, limit],
+    [appliedSearch, topCategoryId, subCategoryId, stockFilter, page, limit],
   );
 
   const summaryQuery = useInventoryBalance({
@@ -101,6 +141,25 @@ export function StockPage() {
   const branchLabel = currentBranch
     ? `${currentBranch.name} (${currentBranch.code})`
     : null;
+
+  const hasActiveFilters = Boolean(
+    searchInput ||
+      appliedSearch ||
+      topCategoryId ||
+      subCategoryId ||
+      stockFilter !== "ALL",
+  );
+
+  function resetFilters() {
+    setSearchInput("");
+    updateUrl((params) => {
+      params.delete("q");
+      params.delete("top");
+      params.delete("sub");
+      params.delete("stock");
+      resetUrlPage(params);
+    });
+  }
 
   function openProduct(productId: string) {
     navigate(`/stock/${productId}`);
@@ -215,24 +274,77 @@ export function StockPage() {
         )}
 
         <div className="space-y-4">
-          <PosToolbar>
-            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <PosToolbar className="p-3 sm:p-3 lg:items-center">
+            <div className="flex w-full min-w-0 flex-wrap items-center gap-2 lg:flex-nowrap">
               <PosSearchBar
                 value={searchInput}
                 onChange={setSearchInput}
                 onSubmit={submitSearch}
                 onClear={resetSearch}
                 placeholder={t("pos.products.searchPlaceholder")}
-                className="w-full sm:max-w-md sm:flex-1 lg:max-w-xl"
+                className="min-w-0 w-full max-w-none flex-1 basis-[14rem] [&_button]:h-9 [&_input]:h-9"
               />
+              <Select
+                id="stock-top-category"
+                size="sm"
+                aria-label={t("pos.settings.topCategory")}
+                value={topCategoryId}
+                className="h-9 min-h-9 w-[11.5rem] shrink-0 text-sm"
+                onChange={(event) => {
+                  updateUrl((params) => {
+                    writeUrlString(params, "top", event.target.value);
+                    params.delete("sub");
+                    resetUrlPage(params);
+                  });
+                }}
+              >
+                <option value="">{t("pos.sale.allCategories")}</option>
+                {topCategoryOptions.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                id="stock-sub-category"
+                size="sm"
+                aria-label={t("pos.settings.subCategory")}
+                value={topCategoryId ? subCategoryId : ""}
+                className="h-9 min-h-9 w-[13rem] shrink-0 text-sm"
+                disabled={!topCategoryId}
+                onChange={(event) => setSubCategoryId(event.target.value)}
+              >
+                <option value="">
+                  {topCategoryId
+                    ? t("pos.sale.allSubCategories")
+                    : t("pos.stock.selectTopCategoryFirst")}
+                </option>
+                {subCategoryOptions.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </Select>
               <PosFilterSelect
                 value={stockFilter}
                 options={STOCK_STATUS_FILTERS}
                 onChange={setStockFilter}
                 ariaLabel={t("pos.stock.status")}
                 getLabel={(value) => t(`pos.filters.stock.${value}`)}
-                className="sm:w-48"
+                className="h-9 min-h-9 w-[9.5rem] sm:w-[9.5rem] shrink-0"
               />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0 gap-1.5 px-3"
+                disabled={!hasActiveFilters}
+                onClick={resetFilters}
+                title={t("pos.common.reset")}
+              >
+                <RotateCcw className="size-3.5" />
+                {t("pos.common.reset")}
+              </Button>
             </div>
           </PosToolbar>
 

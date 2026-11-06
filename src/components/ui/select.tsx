@@ -123,7 +123,7 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             id={id}
             aria-label={ariaLabel}
             className={cn(
-              "relative flex h-full w-full min-w-0 items-center rounded-lg border border-input bg-background py-2 pl-3 pr-9 leading-normal shadow-xs transition-all hover:border-ring/40 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground",
+              "relative flex h-full w-full min-w-0 items-center overflow-hidden whitespace-nowrap rounded-lg border border-input bg-background py-2 pl-3 pr-9 leading-none shadow-xs transition-all hover:border-ring/40 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground",
               size === "sm"
                 ? "text-xs lg:text-xs xl:text-sm"
                 : "text-sm",

@@ -441,6 +441,7 @@
       "noMovementsFiltered": "No restock records match your search or date filters. Try Reset.",
       "searchProduct": "အမည် သို့မဟုတ် ကုဒ်ဖြင့် ရှာပါ...",
       "noProductsFound": "ကုန်ပစ္စည်း မတွေ့ပါ။",
+      "selectTopCategoryFirst": "Top အရင်ရွေး",
       "by": "ပြုလုပ်သူ"
     },
     "products": {
