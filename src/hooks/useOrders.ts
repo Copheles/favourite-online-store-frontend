@@ -40,19 +40,23 @@ export function useOrders(params: Omit<ListOrdersParams, "branchId"> = {}) {
 }
 
 export function useOrder(id: string | null) {
+  const { currentBranchId } = useBranch();
+
   return useQuery({
-    queryKey: queryKeys.orders.detail(id ?? ""),
-    queryFn: () => getOrder(id!),
-    enabled: !!id,
+    queryKey: queryKeys.orders.detail(id ?? "", currentBranchId),
+    queryFn: () => getOrder(id!, currentBranchId),
+    enabled: !!id && !!currentBranchId,
     staleTime: STALE_TIME.transactional,
   });
 }
 
 export function useOrderReceipt(id: string | null) {
+  const { currentBranchId } = useBranch();
+
   return useQuery({
-    queryKey: queryKeys.orders.receipt(id ?? ""),
-    queryFn: () => getOrderReceipt(id!),
-    enabled: !!id,
+    queryKey: queryKeys.orders.receipt(id ?? "", currentBranchId),
+    queryFn: () => getOrderReceipt(id!, currentBranchId),
+    enabled: !!id && !!currentBranchId,
     staleTime: STALE_TIME.transactional,
   });
 }

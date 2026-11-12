@@ -33,14 +33,22 @@ export async function listOrders(
   return data;
 }
 
-export async function getOrder(id: string): Promise<OrderDetail> {
-  const { data } = await axiosClient.get<OrderDetail>(`/api/orders/${id}`);
+export async function getOrder(
+  id: string,
+  branchId?: string,
+): Promise<OrderDetail> {
+  const { data } = await axiosClient.get<OrderDetail>(
+    `/api/orders/${id}${toQueryString({ branchId })}`,
+  );
   return data;
 }
 
-export async function getOrderReceipt(id: string): Promise<OrderReceipt> {
+export async function getOrderReceipt(
+  id: string,
+  branchId?: string,
+): Promise<OrderReceipt> {
   const { data } = await axiosClient.get<OrderReceipt>(
-    `/api/orders/${id}/receipt`,
+    `/api/orders/${id}/receipt${toQueryString({ branchId })}`,
   );
   return data;
 }

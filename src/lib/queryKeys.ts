@@ -24,9 +24,10 @@ export const queryKeys = {
     all: ["orders"] as const,
     list: (params: ListOrdersParams) =>
       [...queryKeys.orders.all, "list", params] as const,
-    detail: (id: string) => [...queryKeys.orders.all, "detail", id] as const,
-    receipt: (id: string) =>
-      [...queryKeys.orders.all, "receipt", id] as const,
+    detail: (id: string, branchId?: string | null) =>
+      [...queryKeys.orders.all, "detail", id, branchId ?? null] as const,
+    receipt: (id: string, branchId?: string | null) =>
+      [...queryKeys.orders.all, "receipt", id, branchId ?? null] as const,
     futureCount: (branchId: string | null | undefined) =>
       [...queryKeys.orders.all, "future-count", branchId] as const,
   },

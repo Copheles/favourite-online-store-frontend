@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import {
   EmptyState,
   ErrorState,
+  LoadingState,
   PageHeader,
 } from "@/components/shared/PageStates";
 import {
@@ -588,25 +589,37 @@ export function OrdersPage() {
         </PosModal>
       )}
 
-      {selectedId && showReceipt && receiptQuery.data && (
+      {selectedId && showReceipt && (
         <PosModal
           title={t("pos.orders.receipt")}
-          description={`${receiptQuery.data.orderNumber ?? receiptQuery.data.orderId} · ${receiptQuery.data.invoiceNumber}`}
+          description={
+            receiptQuery.data
+              ? `${receiptQuery.data.orderNumber ?? receiptQuery.data.orderId} · ${receiptQuery.data.invoiceNumber}`
+              : undefined
+          }
           onClose={() => {
             setSelectedId(null);
             setShowReceipt(false);
           }}
           closeLabel={t("pos.common.close")}
         >
-          <ReceiptTicket receipt={receiptQuery.data} />
-          <Button
-            className="mt-4 w-full"
-            variant="outline"
-            onClick={() => window.print()}
-          >
-            <Printer className="size-4" />
-            {t("pos.orders.print")}
-          </Button>
+          {receiptQuery.isLoading && (
+            <LoadingState label={t("pos.common.loading")} />
+          )}
+          {receiptQuery.isError && <ErrorState />}
+          {receiptQuery.data && (
+            <>
+              <ReceiptTicket receipt={receiptQuery.data} />
+              <Button
+                className="mt-4 w-full"
+                variant="outline"
+                onClick={() => window.print()}
+              >
+                <Printer className="size-4" />
+                {t("pos.orders.print")}
+              </Button>
+            </>
+          )}
         </PosModal>
       )}
 
