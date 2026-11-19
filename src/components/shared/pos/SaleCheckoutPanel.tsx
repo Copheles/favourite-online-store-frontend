@@ -137,7 +137,6 @@ export function SaleCheckoutPanel({
                 name="orderDate"
                 label={t("pos.sale.orderDate")}
                 type="date"
-                min={todayISO()}
                 labelClassName={saleCheckoutLabelClass}
                 controlClassName={saleCheckoutControlClass}
               />
