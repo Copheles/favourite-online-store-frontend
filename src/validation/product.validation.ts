@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { toMoney } from "@/lib/format";
 import { optionalString } from "@/validation/common.validation";
 import type { Product } from "@/types/api";
 
@@ -13,15 +14,15 @@ export const getProductEditSchema = (t: (key: string) => string) =>
       .min(1, t("pos.validation.codeRequired"))
       .max(64, t("pos.validation.max64")),
     barcode: optionalString(255),
-    sellingPrice: z.number().min(0, t("pos.validation.minZero")),
-    discount: z.number().min(0, t("pos.validation.minZero")),
+    sellingPrice: z.coerce.number().min(0, t("pos.validation.minZero")),
+    discount: z.coerce.number().min(0, t("pos.validation.minZero")),
     topCategoryId: z.string().min(1, t("pos.validation.categoryRequired")),
     subCategoryId: optionalString(64),
     unit: optionalString(255),
     description: optionalString(1000),
     type: z.enum(["STOCK_CONTROL", "NO_STOCK_CONTROL"]),
     availability: z.enum(["AVAILABLE", "UNAVAILABLE"]),
-    saleOrder: z.number().int().min(0, t("pos.validation.minZero")),
+    saleOrder: z.coerce.number().int().min(0, t("pos.validation.minZero")),
     isActive: z.boolean(),
   });
 
@@ -50,15 +51,15 @@ export function productToEditValues(product: Product): ProductEditFormValues {
     name: product.name,
     code: product.code,
     barcode: product.barcode ?? "",
-    sellingPrice: product.sellingPrice,
-    discount: product.discount,
+    sellingPrice: toMoney(product.sellingPrice),
+    discount: toMoney(product.discount),
     topCategoryId: product.topCategoryId,
     subCategoryId: product.subCategoryId ?? "",
     unit: product.unit ?? "",
     description: product.description ?? "",
     type: product.type,
     availability: product.availability,
-    saleOrder: product.saleOrder,
+    saleOrder: Math.max(0, Math.trunc(toMoney(product.saleOrder))),
     isActive: product.isActive,
   };
 }

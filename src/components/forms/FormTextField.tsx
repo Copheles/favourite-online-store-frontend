@@ -57,7 +57,12 @@ export function FormTextField<T extends FieldValues>({
               onChange={(event) => {
                 if (type === "number") {
                   const next = event.target.value;
-                  field.onChange(next === "" ? 0 : Number(next));
+                  if (next === "") {
+                    field.onChange(0);
+                    return;
+                  }
+                  const parsed = Number(next);
+                  field.onChange(Number.isFinite(parsed) ? parsed : 0);
                   return;
                 }
                 field.onChange(event.target.value);
