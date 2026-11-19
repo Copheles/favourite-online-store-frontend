@@ -14,15 +14,15 @@ export const getProductEditSchema = (t: (key: string) => string) =>
       .min(1, t("pos.validation.codeRequired"))
       .max(64, t("pos.validation.max64")),
     barcode: optionalString(255),
-    sellingPrice: z.coerce.number().min(0, t("pos.validation.minZero")),
-    discount: z.coerce.number().min(0, t("pos.validation.minZero")),
+    sellingPrice: z.number().min(0, t("pos.validation.minZero")),
+    discount: z.number().min(0, t("pos.validation.minZero")),
     topCategoryId: z.string().min(1, t("pos.validation.categoryRequired")),
     subCategoryId: optionalString(64),
     unit: optionalString(255),
     description: optionalString(1000),
     type: z.enum(["STOCK_CONTROL", "NO_STOCK_CONTROL"]),
     availability: z.enum(["AVAILABLE", "UNAVAILABLE"]),
-    saleOrder: z.coerce.number().int().min(0, t("pos.validation.minZero")),
+    saleOrder: z.number().int().min(0, t("pos.validation.minZero")),
     isActive: z.boolean(),
   });
 
